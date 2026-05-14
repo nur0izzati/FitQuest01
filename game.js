@@ -21,8 +21,10 @@ let currentLevel = 1;
 let currentXP = 0;
 let xpNeededForLevelUp = 100;
 let uiText;
+let lastShake = 0;
 
 function preload() {
+    // Loading the hero sprite sheet
     this.load.spritesheet('hero', 'https://labs.phaser.io/assets/sprites/dude.png', {
         frameWidth: 32,
         frameHeight: 48
@@ -30,7 +32,7 @@ function preload() {
 }
 
 function create() {
-    const scene = this; // Save reference to the scene for the sensor logic
+    const scene = this;
 
     // Add Player
     player = this.physics.add.sprite(window.innerWidth / 2, window.innerHeight / 2, 'hero');
@@ -44,7 +46,7 @@ function create() {
         repeat: -1
     });
 
-    // Cute UI Panel
+    // Game UI Panel
     uiText = this.add.text(20, 20, '', {
         fontSize: '18px',
         fill: '#ffffff',
@@ -53,22 +55,24 @@ function create() {
         lineSpacing: 6
     }).setScrollFactor(0);
 
-    // --- Web Sensor API Logic ---
+    // --- Modern Sensor API ---
     if ('LinearAccelerationSensor' in window) {
         const sensor = new LinearAccelerationSensor({ frequency: 60 });
 
         sensor.addEventListener('reading', () => {
-            // WALKING DETECTION
+            // WALKING DETECTION (Y-Axis movement)
             if (sensor.y > 12) {
                 isWalking = true;
                 stepCount++;
-                // Use scene reference here
                 scene.time.delayedCall(500, () => { isWalking = false; });
             }
 
-            // ATTACK DETECTION
+            // ATTACK DETECTION (Total shake force)
             let totalForce = Math.abs(sensor.x) + Math.abs(sensor.y) + Math.abs(sensor.z);
-            if (totalForce > 18) {
+            let now = Date.now();
+
+            if (totalForce > 25 && (now - lastShake > 1000)) {
+                lastShake = now;
                 performAttack(scene);
             }
         });
@@ -84,8 +88,8 @@ function update() {
     if (isWalking) {
         player.setVelocityY(-100);
         player.anims.play('walk-anim', true);
-        currentXP += 0.1; // Slow down XP gain for better balance
-        checkLevelUp(this); // Pass scene context
+        currentXP += 0.1;
+        checkLevelUp(this);
     } else {
         player.setVelocityY(0);
         player.anims.stop();
@@ -107,14 +111,19 @@ function checkLevelUp(scene) {
         currentLevel += 1;
         xpNeededForLevelUp = Math.floor(xpNeededForLevelUp * 1.5);
 
-        // Visual feedback
+        // Feedback: Player grows temporarily
         player.setScale(1.5);
         scene.time.delayedCall(500, () => { player.setScale(1); });
+
+        // Save progress to Firebase
+        if (typeof savePlayerData === "function") {
+            savePlayerData(Math.floor(stepCount/10), currentLevel, currentXP);
+        }
     }
 }
 
 function performAttack(scene) {
-    player.setTint(0xff0000);
+    player.setTint(0xff0000); // Turns red when attacking
     currentXP += 5;
     checkLevelUp(scene);
     scene.time.delayedCall(200, () => { player.clearTint(); });
