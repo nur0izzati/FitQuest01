@@ -1,30 +1,47 @@
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FitQuest: RPG</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
 
-<script>
-  // Your real web app's Firebase configuration from console
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "fitquest-xxxxx.firebaseapp.com",
-    projectId: "fitquest-xxxxx",
-    storageBucket: "fitquest-xxxxx.appspot.com",
-    messagingSenderId: "xxxxxxxxxxxx",
-    appId: "xxxxxxxxxxxx"
-  };
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui-layer"></div>
 
-  // Initialize Firebase Cloud Connection
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "fitquest-xxxxx.firebaseapp.com",
+            projectId: "fitquest-xxxxx",
+            storageBucket: "fitquest-xxxxx.appspot.com",
+            messagingSenderId: "xxxxxxxxxxxx",
+            appId: "xxxxxxxxxxxx"
+        };
 
-  // Function called to back up player metrics to the server
-  function savePlayerData(steps, lvl, xp) {
-      db.collection("users").doc("test_player").set({
-          totalSteps: steps,
-          level: lvl,
-          currentXP: xp,
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true })
-      .then(() => console.log("Cloud backup completed successfully!"))
-      .catch((error) => console.error("Cloud synchronization error: ", error));
-  }
-</script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Helper function to save data from the game to the cloud
+        function savePlayerData(steps, lvl, xp) {
+            db.collection("users").doc("test_player").set({
+                totalSteps: steps,
+                level: lvl,
+                currentXP: xp,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true })
+            .then(() => console.log("Cloud backup successful!"))
+            .catch((error) => console.error("Cloud error: ", error));
+        }
+    </script>
+    <script src="game.js"></script>
+</body>
+</html>
