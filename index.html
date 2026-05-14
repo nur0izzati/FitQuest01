@@ -44,6 +44,11 @@
             .then(() => console.log("Cloud backup successful!"))
             .catch((error) => console.error("Cloud error: ", error));
         }
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("./sw.js")
+            .then(() => console.log("SW registered"));
+        }
     </script>
     <script src="game.js"></script>
 </body>
