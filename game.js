@@ -1,4 +1,4 @@
-// --- Game Configuration ---
+// --- 1. Game Configuration ---
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
@@ -13,6 +13,7 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// --- 2. Global Variables (Required for the code to work) ---
 let player;
 let isWalking = false;
 let stepCount = 0;
@@ -21,9 +22,10 @@ let currentXP = 0;
 let xpNeededForLevelUp = 100;
 let uiText;
 let lastShake = 0;
+let walkTimeout; 
 
 function preload() {
-    // Character asset
+    // Character asset - Replace with your GitHub link if you have a custom PNG
     this.load.spritesheet('hero', 'https://labs.phaser.io/assets/sprites/dude.png', {
         frameWidth: 32,
         frameHeight: 48
@@ -33,11 +35,11 @@ function preload() {
 function create() {
     const scene = this;
 
-    // Add Player
+    // Add Player to the middle of the screen
     player = this.physics.add.sprite(window.innerWidth / 2, window.innerHeight / 2, 'hero');
     player.setCollideWorldBounds(true);
 
-    // Animations
+    // Animations (Walking and Standing Still)
     this.anims.create({
         key: 'walk-anim',
         frames: this.anims.generateFrameNumbers('hero', { start: 5, end: 8 }),
@@ -45,83 +47,104 @@ function create() {
         repeat: -1
     });
 
-    // UI Panel
-    uiText = this.add.text(20, 20, 'Tap Screen to Enable Motion', {
+    this.anims.create({
+        key: 'idle',
+        frames: [ { key: 'hero', frame: 4 } ],
+        frameRate: 20
+    });
+
+    // UI Text Panel
+    uiText = this.add.text(20, 20, 'Tap to Start Motion', {
         fontSize: '18px',
         fill: '#ffffff',
         backgroundColor: '#ff66b2',
         padding: { x: 10, y: 10 }
     }).setScrollFactor(0).setInteractive();
 
-    // SENSOR LOGIC (From your working prototype)
+    // --- SENSOR ACTIVATION (The "Prototype" way) ---
     this.input.on('pointerdown', () => {
         if (typeof DeviceMotionEvent.requestPermission === "function") {
             DeviceMotionEvent.requestPermission().then(response => {
                 if (response === "granted") {
                     window.addEventListener("devicemotion", handleMotion);
-                    uiText.setText("Motion Enabled!");
+                    uiText.setText("Motion Ready!");
                 }
             });
         } else {
             window.addEventListener("devicemotion", handleMotion);
-            uiText.setText("Motion Enabled!");
+            uiText.setText("Motion Ready!");
         }
     });
 }
 
-// Logic to translate phone movement to Phaser variables
 function handleMotion(event) {
     let acc = event.accelerationIncludingGravity;
     if (!acc) return;
 
     let force = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
 
-    // Walking detection
-    if (force > 12) {
+    // 1. WALKING DETECTION
+    if (force > 10 && force < 22) {
         isWalking = true;
+        clearTimeout(walkTimeout);
+        walkTimeout = setTimeout(() => { isWalking = false; }, 800);
         stepCount++;
-    } else {
-        isWalking = false;
     }
 
-    // Shake attack detection
+    // 2. ATTACK DETECTION
     let now = Date.now();
-    if (force > 25 && (now - lastShake > 1000)) {
+    if (force >= 22 && (now - lastShake > 1000)) {
         lastShake = now;
-        // We'll call a function to tint the player red
-        player.setTint(0xff0000);
-        currentXP += 10;
+        performAttack(); // Call the attack function
     }
 }
 
 function update() {
     // Movement Logic
     if (isWalking) {
-        player.setVelocityY(-150); // Moves character UP the screen
+        player.setVelocityY(-150); // Move UP
         player.anims.play('walk-anim', true);
         currentXP += 0.05;
+        checkLevelUp(this);
     } else {
         player.setVelocityY(0);
-        player.anims.stop();
-        // Clear red tint slowly after an attack
+        player.anims.play('idle', true);
+        
         if (player.isTinted) {
             player.clearTint();
         }
     }
 
-    // Level Up Check
-    if (currentXP >= xpNeededForLevelUp) {
-        currentLevel++;
-        currentXP = 0;
-        xpNeededForLevelUp *= 1.2;
-        player.setScale(player.scale + 0.1); // Character grows!
-    }
-
-    // Update Text
+    // Update UI Stats
     uiText.setText(
-        `⭐ FitQuest ⭐\n` +
+        `⭐ FitQuest Stats ⭐\n` +
         `Level: ${currentLevel}\n` +
-        `XP: ${Math.floor(currentXP)} / ${Math.floor(xpNeededForLevelUp)}\n` +
+        `XP: ${Math.floor(currentXP)} / ${xpNeededForLevelUp}\n` +
+        `Steps: ${Math.floor(stepCount / 10)}\n` +
         `Status: ${isWalking ? '🐾 WALKING' : '🧍 STANDING'}`
     );
+}
+
+function checkLevelUp(scene) {
+    if (currentXP >= xpNeededForLevelUp) {
+        currentXP = 0;
+        currentLevel += 1;
+        xpNeededForLevelUp = Math.floor(xpNeededForLevelUp * 1.5);
+
+        // Visual Feedback
+        player.setScale(1.5);
+        scene.time.delayedCall(500, () => { player.setScale(1); });
+
+        // Cloud Save (Firebase)
+        if (typeof savePlayerData === "function") {
+            savePlayerData(Math.floor(stepCount/10), currentLevel, currentXP);
+        }
+    }
+}
+
+function performAttack() {
+    player.setTint(0xff0000); // Turns red
+    currentXP += 10;
+    // Tiny jump for feedback
+    player.setVelocityY(-200);
 }
