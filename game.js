@@ -1,4 +1,3 @@
-// --- 1. Game Configuration ---
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
@@ -13,18 +12,14 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Global Variables
 let player;
 let isWalking = false;
-let stepCount = 0;
-let currentLevel = 1;
-let currentXP = 0;
-let xpNeededForLevelUp = 100;
+let cursors; // For keyboard testing
 let uiText;
-let lastShake = 0;
+let stepCount = 0;
 
 function preload() {
-    // Loading the hero sprite sheet
+    // Change the URL here to your GitHub path after uploading
     this.load.spritesheet('hero', 'https://labs.phaser.io/assets/sprites/dude.png', {
         frameWidth: 32,
         frameHeight: 48
@@ -34,11 +29,14 @@ function preload() {
 function create() {
     const scene = this;
 
+    // Create Keyboard Controls
+    cursors = this.input.keyboard.createCursorKeys();
+
     // Add Player
     player = this.physics.add.sprite(window.innerWidth / 2, window.innerHeight / 2, 'hero');
     player.setCollideWorldBounds(true);
 
-    // Create Animations
+    // Animations
     this.anims.create({
         key: 'walk-anim',
         frames: this.anims.generateFrameNumbers('hero', { start: 5, end: 8 }),
@@ -46,63 +44,52 @@ function create() {
         repeat: -1
     });
 
-    // Game UI Panel
-    uiText = this.add.text(20, 20, '', {
-        fontSize: '18px',
-        fill: '#ffffff',
-        backgroundColor: '#ff66b2',
-        padding: { x: 10, y: 10 },
-        lineSpacing: 6
-    }).setScrollFactor(0);
+    this.anims.create({
+        key: 'idle',
+        frames: [ { key: 'hero', frame: 4 } ],
+        frameRate: 20
+    });
 
-    // --- Modern Sensor API ---
-    if ('LinearAccelerationSensor' in window) {
-        const sensor = new LinearAccelerationSensor({ frequency: 60 });
+    uiText = this.add.text(20, 20, 'Tap Screen to Start Sensors', {
+        fontSize: '18px', fill: '#ffffff', backgroundColor: '#ff66b2', padding: { x: 10, y: 10 }
+    });
 
-        sensor.addEventListener('reading', () => {
-            // WALKING DETECTION (Y-Axis movement)
-            if (sensor.y > 12) {
-                isWalking = true;
-                stepCount++;
-                scene.time.delayedCall(500, () => { isWalking = false; });
-            }
-
-            // ATTACK DETECTION (Total shake force)
-            let totalForce = Math.abs(sensor.x) + Math.abs(sensor.y) + Math.abs(sensor.z);
-            let now = Date.now();
-
-            if (totalForce > 25 && (now - lastShake > 1000)) {
-                lastShake = now;
-                performAttack(scene);
-            }
-        });
-        sensor.start();
-    } else {
-        uiText.setText('Sensor Error: Use Chrome on Android with HTTPS');
-    }
+    // START SENSOR ON TAP (Required by many browsers)
+    this.input.on('pointerdown', () => {
+        if ('LinearAccelerationSensor' in window) {
+            const sensor = new LinearAccelerationSensor({ frequency: 60 });
+            sensor.addEventListener('reading', () => {
+                if (sensor.y > 12) {
+                    isWalking = true;
+                    stepCount++;
+                    scene.time.delayedCall(500, () => { isWalking = false; });
+                }
+            });
+            sensor.start();
+            uiText.setText('Sensor Active! Walk or use Arrows');
+        }
+    });
 }
 
 function update() {
-    let formalSteps = Math.floor(stepCount / 10);
+    // RESET VELOCITY EVERY FRAME
+    player.setVelocity(0);
 
-    if (isWalking) {
-        player.setVelocityY(-100);
+    // LOGIC: If Walking (Sensor) OR Pressing Up (Keyboard)
+    if (isWalking || cursors.up.isDown) {
+        player.setVelocityY(-150); // Move Up
         player.anims.play('walk-anim', true);
-        currentXP += 0.1;
-        checkLevelUp(this);
-    } else {
-        player.setVelocityY(0);
-        player.anims.stop();
+    }
+    else if (cursors.down.isDown) {
+        player.setVelocityY(150); // Move Down
+        player.anims.play('walk-anim', true);
+    }
+    else {
+        player.anims.play('idle');
     }
 
-    uiText.setText(
-        `⭐ FitQuest Stats ⭐\n` +
-        `---------------------\n` +
-        `Level: ${currentLevel}\n` +
-        `XP: ${Math.floor(currentXP)} / ${xpNeededForLevelUp}\n` +
-        `Steps: ${formalSteps}\n` +
-        `Status: ${isWalking ? '🐾 WALKING' : '🧍 STANDING'}`
-    );
+    // Update UI
+    uiText.setText(`Steps: ${Math.floor(stepCount/10)}\nStatus: ${player.body.speed > 0 ? 'MOVING' : 'IDLE'}`);
 }
 
 function checkLevelUp(scene) {
