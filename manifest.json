@@ -3,12 +3,12 @@
   "short_name": "FitQuest",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#87CEEB",
   "theme_color": "#ff66b2",
   "icons": [
     {
-      "src": "assets/icon.png",
-      "sizes": "192x192",
+      "src": "https://cdn-icons-png.flaticon.com/512/3068/3068321.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
