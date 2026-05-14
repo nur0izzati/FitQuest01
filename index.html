@@ -1,81 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
 
-    <title>FitQuest RPG</title>
+<meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width,
-          initial-scale=1.0,
-          maximum-scale=1.0,
-          user-scalable=no">
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no">
 
-    <meta name="theme-color" content="#00ff66">
+<title>FitQuest RPG</title>
 
-    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00ff66">
 
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<link rel="manifest" href="manifest.json">
 
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
-        }
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 
-        #start-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.95);
-            color: white;
-            z-index: 999;
+<style>
 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    touch-action: none;
+}
 
-            text-align: center;
-            padding: 20px;
-        }
+#start-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    color: white;
 
-        button {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            background: #00ff66;
-            color: black;
-            font-size: 18px;
-            font-weight: bold;
-        }
-    </style>
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 999;
+    text-align: center;
+}
+
+button {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 12px;
+    background: #00ff66;
+    color: black;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+</style>
+
 </head>
 
 <body>
 
 <div id="start-overlay">
+
     <h1>FITQUEST RPG</h1>
 
     <p>
-        Walk/jog in place to move.<br><br>
-        Shake hard to attack.
+        Touch screen to move.<br><br>
+        Walk/jog for speed boost.<br><br>
+        Shake phone to attack.
     </p>
 
     <button onclick="startMotion()">
-        START
+        START GAME
     </button>
+
 </div>
 
 <script src="game.js"></script>
 
 <script>
-    // Register Service Worker
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("./service-worker.js")
-            .then(() => console.log("Service Worker Registered"));
-    }
+
+if ("serviceWorker" in navigator) {
+
+    navigator.serviceWorker.register("./service-worker.js")
+        .then(() => console.log("SW registered"));
+}
+
 </script>
 
 </body>
