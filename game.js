@@ -1,5 +1,6 @@
 let player;
 let enemy;
+
 let speed = 0;
 
 let enemyHP = 100;
@@ -7,20 +8,29 @@ let enemyHP = 100;
 let motionEnabled = false;
 
 const SETTINGS = {
+
     moveThreshold: 2.2,
     attackThreshold: 7,
-    maxSpeed: 5,
-    friction: 0.92,
-    accelerationGain: 0.35
+
+    accelerationGain: 0.3,
+
+    maxSpeed: 6,
+
+    friction: 0.92
 };
 
 const gameState = {
-    directionX: 0,
-    directionY: 0,
+
+    moveX: 0,
+    moveY: 0,
+
+    touchActive: false,
+
     lastAttack: 0
 };
 
 const config = {
+
     type: Phaser.AUTO,
 
     width: window.innerWidth,
@@ -29,6 +39,7 @@ const config = {
     backgroundColor: "#111",
 
     scene: {
+
         preload,
         create,
         update
@@ -43,7 +54,7 @@ function preload() {
 
 function create() {
 
-    // Player
+    // PLAYER
     player = this.add.rectangle(
         120,
         window.innerHeight / 2,
@@ -52,7 +63,7 @@ function create() {
         0x00ff66
     );
 
-    // Enemy
+    // ENEMY
     enemy = this.add.rectangle(
         window.innerWidth - 120,
         window.innerHeight / 2,
@@ -61,11 +72,11 @@ function create() {
         0xff3333
     );
 
-    // Text
+    // STATUS TEXT
     this.statusText = this.add.text(
         20,
         20,
-        "Waiting for movement...",
+        "Move with touch",
         {
             fontSize: "20px",
             color: "#ffffff"
@@ -82,10 +93,30 @@ function create() {
         }
     );
 
-    // Keyboard fallback
-    this.cursors = this.input.keyboard.createCursorKeys();
+    // TOUCH CONTROLS
+    this.input.on("pointerdown", pointer => {
 
-    // Motion listener
+        gameState.touchActive = true;
+
+        updateTouchDirection(pointer);
+    });
+
+    this.input.on("pointermove", pointer => {
+
+        if (!gameState.touchActive) return;
+
+        updateTouchDirection(pointer);
+    });
+
+    this.input.on("pointerup", () => {
+
+        gameState.touchActive = false;
+
+        gameState.moveX = 0;
+        gameState.moveY = 0;
+    });
+
+    // DEVICE MOTION
     window.addEventListener(
         "devicemotion",
         handleMotion,
@@ -95,39 +126,18 @@ function create() {
 
 function update() {
 
-    // Keyboard fallback for PC testing
-    gameState.directionX = 0;
-    gameState.directionY = 0;
-
-    if (this.cursors.left.isDown) {
-        gameState.directionX = -1;
-    }
-
-    if (this.cursors.right.isDown) {
-        gameState.directionX = 1;
-    }
-
-    if (this.cursors.up.isDown) {
-        gameState.directionY = -1;
-    }
-
-    if (this.cursors.down.isDown) {
-        gameState.directionY = 1;
-    }
-
-    // Apply friction
+    // FRICTION
     speed *= SETTINGS.friction;
 
-    // Stop tiny floating movement
     if (speed < 0.05) {
         speed = 0;
     }
 
-    // Move player
-    player.x += gameState.directionX * speed;
-    player.y += gameState.directionY * speed;
+    // PLAYER MOVEMENT
+    player.x += gameState.moveX * speed;
+    player.y += gameState.moveY * speed;
 
-    // Keep inside screen
+    // BOUNDS
     player.x = Phaser.Math.Clamp(
         player.x,
         30,
@@ -139,14 +149,31 @@ function update() {
         30,
         window.innerHeight - 30
     );
+
+    // UI
+    game.scene.scenes[0].statusText.setText(
+        "Speed: " + speed.toFixed(2)
+    );
+}
+
+function updateTouchDirection(pointer) {
+
+    const dx = pointer.x - player.x;
+    const dy = pointer.y - player.y;
+
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    if (length === 0) return;
+
+    // NORMALIZED DIRECTION
+    gameState.moveX = dx / length;
+    gameState.moveY = dy / length;
 }
 
 function handleMotion(event) {
 
     if (!motionEnabled) return;
 
-    // IMPORTANT:
-    // Use acceleration WITHOUT gravity first
     let accel =
         event.acceleration ||
         event.accelerationIncludingGravity;
@@ -157,21 +184,19 @@ function handleMotion(event) {
     const y = accel.y || 0;
     const z = accel.z || 0;
 
-    // Motion magnitude
+    // VECTOR MAGNITUDE
     const magnitude = Math.sqrt(
-        x * x +
-        y * y +
-        z * z
+        x*x +
+        y*y +
+        z*z
     );
+
+    // IGNORE SENSOR NOISE
+    if (magnitude < 1.2) return;
 
     console.log("Motion:", magnitude);
 
-    // Ignore tiny sensor noise
-    if (magnitude < 1.2) {
-        return;
-    }
-
-    // MOVEMENT
+    // SPEED BOOST
     if (magnitude > SETTINGS.moveThreshold) {
 
         speed +=
@@ -182,10 +207,6 @@ function handleMotion(event) {
             speed,
             SETTINGS.maxSpeed
         );
-
-        // Auto-forward movement
-        // (You can replace with joystick later)
-        gameState.directionX = 1;
     }
 
     // ATTACK
@@ -204,14 +225,15 @@ function handleMotion(event) {
 
 function attackEnemy() {
 
-    const distance = Phaser.Math.Distance.Between(
-        player.x,
-        player.y,
-        enemy.x,
-        enemy.y
-    );
+    const distance =
+        Phaser.Math.Distance.Between(
+            player.x,
+            player.y,
+            enemy.x,
+            enemy.y
+        );
 
-    // Must be close enough
+    // TOO FAR
     if (distance > 120) {
         return;
     }
@@ -224,12 +246,16 @@ function attackEnemy() {
         "Enemy HP: " + enemyHP
     );
 
+    // FLASH EFFECT
     enemy.fillColor = 0xffffff;
 
     setTimeout(() => {
+
         enemy.fillColor = 0xff3333;
+
     }, 100);
 
+    // WIN
     if (enemyHP <= 0) {
 
         game.scene.scenes[0].statusText.setText(
@@ -240,7 +266,7 @@ function attackEnemy() {
 
 async function startMotion() {
 
-    // iPhone permission
+    // iPhone motion permission
     if (
         typeof DeviceMotionEvent !== "undefined" &&
         typeof DeviceMotionEvent.requestPermission === "function"
@@ -252,7 +278,9 @@ async function startMotion() {
                 await DeviceMotionEvent.requestPermission();
 
             if (permission !== "granted") {
+
                 alert("Motion permission denied");
+
                 return;
             }
 
