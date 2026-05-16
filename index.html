@@ -1,90 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1.0,
-maximum-scale=1.0,
-user-scalable=no">
-
-<title>FitQuest RPG</title>
-
-<meta name="theme-color" content="#00ff66">
-
-<link rel="manifest" href="manifest.json">
-
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-
-<style>
-
-body {
-    margin: 0;
-    overflow: hidden;
-    background: black;
-    touch-action: none;
-}
-
-#start-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.95);
-    color: white;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    z-index: 999;
-    text-align: center;
-}
-
-button {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 12px;
-    background: #00ff66;
-    color: black;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-</style>
-
+  <meta charset="UTF-8">
+  <title>FitQuest: Fitness RPG Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Firebase JavaScript SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-
 <body>
 
-<div id="start-overlay">
+  <!-- ================= PANEL 1: SPLASH & LOGIN ================= -->
+  <div id="screen-auth" class="view-layer">
+    <div class="auth-box">
+      <div class="logo-container">⚔️</div>
+      <h1>FITQUEST</h1>
+      <p class="subtitle">Tukarkan Tenaga Fizikal Kepada Kuasa RPG</p>
+      
+      <div class="input-group">
+        <input type="email" id="auth-email" placeholder="E-mel Akademik">
+        <input type="password" id="auth-password" placeholder="Kata Laluan">
+      </div>
+      
+      <button class="menu-btn primary" onclick="handleAuth('login')">LOG MASUK</button>
+      <button class="menu-btn secondary" onclick="handleAuth('register')">DAFTAR AKAUN Baru</button>
+      <div id="auth-error" class="error-text"></div>
+    </div>
+  </div>
 
-    <h1>FITQUEST RPG</h1>
+  <!-- ================= PANEL 2: HOME DASHBOARD ================= -->
+  <div id="screen-dashboard" class="view-layer hidden">
+    <div class="dashboard-header">
+      <h2>Selamat Kembali, <span id="user-display-name">Wira</span>!</h2>
+      <button class="logout-minimal" onclick="logoutSession()">Log Keluar</button>
+    </div>
+    
+    <!-- Gamification Stat Cards -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="card-label">Jumlah Mata (XP)</div>
+        <div class="card-value value-xp" id="dash-xp">0000</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-label">Streak Harian</div>
+        <div class="card-value value-streak" id="dash-streak">0 Hari</div>
+      </div>
+    </div>
 
-    <p>
-        Touch screen to move.<br><br>
-        Walk/jog for speed boost.<br><br>
-        Shake phone to attack.
-    </p>
+    <!-- Analytics Panel (Panel 7) -->
+    <div class="analytics-preview">
+      <h3>Prestasi Sesi Lepas</h3>
+      <p>Tenaga Dibakar: <b id="dash-calories">0 kcal</b></p>
+      <p>Masa Aktif: <b id="dash-duration">0 minit</b></p>
+    </div>
 
-    <button onclick="startMotion()">
-        START GAME
-    </button>
+    <button class="cta-pulse-btn" onclick="navigateTo('screen-calibration')">MULAKAN SENAMAN</button>
+  </div>
 
-</div>
+  <!-- ================= PANEL 3: SENSOR CALIBRATION ================= -->
+  <div id="screen-calibration" class="view-layer hidden">
+    <div class="calibration-box">
+      <h2>SINKRONISASI SENSOR</h2>
+      <p>Sila pegang telefon bimbit anda secara menegak dan lari setempat selama 3 saat untuk penentukuran perkakasan.</p>
+      
+      <div class="sensor-indicator">
+        <div>Accelerometer: <span id="status-acc" class="bad">Menunggu...</span></div>
+        <div>Gyroscope: <span id="status-gyro" class="bad">Menunggu...</span></div>
+      </div>
 
-<script src="game.js"></script>
+      <button class="menu-btn primary" id="btn-request-sensors" onclick="requestSensorPermissions()">BENARKAN CAPAIAN SENSOR</button>
+    </div>
+  </div>
 
-<script>
+  <!-- ================= PANELS 4 & 5: GAMEPLAY ENGINE LAYER ================= -->
+  <div id="screen-gameplay" class="view-layer hidden">
+    <!-- Your exact game elements injection point -->
+    <div id="game-container">
+       <!-- Game engine dynamic renders go here -->
+    </div>
+  </div>
 
-if ("serviceWorker" in navigator) {
-
-    navigator.serviceWorker.register("./service-worker.js")
-        .then(() => console.log("SW registered"));
-}
-
-</script>
-
+  <!-- Scripts references -->
+  <script src="app.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
