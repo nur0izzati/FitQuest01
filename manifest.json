@@ -1,21 +1,21 @@
 {
   "short_name": "FitQuest",
-  "name": "FitQuest: Fitness RPG",
+  "name": "FitQuest: Slime King Campaign",
   "icons": [
     {
-      "src": "assets/icons/icon-192.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/192/192062.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "assets/icons/icon-512.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/512/512140.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": "/index.html",
-  "background_color": "#0d0e12",
-  "theme_color": "#39ff14",
+  "start_url": "./index.html",
+  "background_color": "#12141c",
+  "theme-color": "#00e5ff",
   "display": "standalone",
   "orientation": "portrait"
 }
