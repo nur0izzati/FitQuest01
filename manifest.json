@@ -1,9 +1,21 @@
 {
-    "name": "FitQuest RPG",
-    "short_name": "FitQuest",
-    "start_url": "./",
-    "display": "fullscreen",
-    "background_color": "#000000",
-    "theme_color": "#00ff66",
-    "orientation": "portrait"
+  "short_name": "FitQuest",
+  "name": "FitQuest: Fitness RPG",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#0d0e12",
+  "theme_color": "#39ff14",
+  "display": "standalone",
+  "orientation": "portrait"
 }
