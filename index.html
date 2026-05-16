@@ -108,7 +108,6 @@
       animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
     }
 
-    /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
     .slime-glob {
       position: absolute;
       width: 28px;
@@ -150,20 +149,11 @@
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
     @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    /* --- SQUISHY SLIME IDLE LOGIC --- */
     @keyframes slimeIdleAnimation {
-      0% {
-        transform: scaleX(1) scaleY(1) translateY(0);
-      }
-      45% {
-        transform: scaleX(0.93) scaleY(1.07) translateY(-4px);
-      }
-      90% {
-        transform: scaleX(1.18) scaleY(0.82) translateY(0);
-      }
-      100% {
-        transform: scaleX(1.2) scaleY(0.8) translateY(0);
-      }
+      0% { transform: scaleX(1) scaleY(1) translateY(0); }
+      45% { transform: scaleX(0.93) scaleY(1.07) translateY(-4px); }
+      90% { transform: scaleX(1.18) scaleY(0.82) translateY(0); }
+      100% { transform: scaleX(1.2) scaleY(0.8) translateY(0); }
     }
 
     #ui-layer {
@@ -440,9 +430,9 @@
       runtime.steerX = xOffset / SETTINGS.padRadius;
       runtime.steerY = yOffset / SETTINGS.padRadius;
 
-      // Swap mapping row indices (Index 1 = Right, Index 2 = Left) to line up perfectly with your sprite design
+      // Corrected row lookups (Index 2 = Right, Index 1 = Left) to fix inverse mirroring
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
-        runtime.currentDirectionRow = runtime.steerX > 0 ? 1 : 2; 
+        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
       } else {
         runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
       }
@@ -733,8 +723,8 @@
     runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
     runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
     if (runtime.steerX !== 0 || runtime.steerY !== 0) {
-      // Swapped rows for right/left keyboard input simulation fallback as well
-      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 1 : 2;
+      // Swapped keyboard fallback indices here as well to fix mirroring
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
       else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
     }
   }
