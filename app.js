@@ -14,12 +14,26 @@ let appState = {
 
 // Mula sistem sebaik sahaja fail HTML siap dimuat naik
 document.addEventListener("DOMContentLoaded", () => {
-  setupSPAViewRouter();
-  verifyHardwareAPI();
+  // --- INITIALIZATION ENTRY POINT (Sila kemas kini bahagian ini dalam app.js) ---
+document.addEventListener("DOMContentLoaded", () => {
+    setupSPAViewRouter();
+    verifyHardwareAPI();
+    
+    // === TAMBAH KOD DAFTAR SERVICE WORKER DI SINI ===
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then((registration) => {
+          console.log('Pendaftaran PWA Service Worker Berjaya! Scope:', registration.scope);
+        })
+        .catch((error) => {
+          console.error('Pendaftaran PWA Service Worker Gagal:', error);
+        });
+    }
+    // ================================================
   
-  // Sediakan cangkuk (lifecycle hook) untuk dipanggil dari game.js apabila selesai perlawanan
-  window.onGameSessionComplete = handleEngineSessionPayload;
-});
+    // Expose lifecycle hook callback for game.js to return session statistics
+    window.onGameSessionComplete = handleEngineSessionPayload;
+  });
 
 function navigateToView(nextScreenId) {
   const currentView = document.getElementById(appState.activeScreen);
