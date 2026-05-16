@@ -25,21 +25,15 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: var(--bg-dark); color: var(--text-main); overflow: hidden; }
     .view-layer { display: flex; flex-direction: column; width: 100%; height: 100%; padding: 25px; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; transition: opacity 0.3s ease; }
     .hidden { display: none !important; opacity: 0; pointer-events: none; }
-    .auth-box, .calibration-box { background: var(--panel-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center; }
+    .calibration-box { background: var(--panel-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center; }
     h2 { margin: 0 0 10px 0; font-size: 1.6rem; letter-spacing: 1px; color: var(--primary); }
     .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
-    .input-group input { width: 100%; padding: 14px; margin-bottom: 12px; background: #222636; border: 1px solid #31374d; border-radius: 8px; color: #fff; font-size: 0.95rem; }
-    .input-group input:focus { border-color: var(--primary); outline: none; }
     .menu-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
     .menu-btn.primary { background: var(--primary); color: #000; }
     .menu-btn.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
-    .menu-btn.guest-btn { background: var(--guest); color: #fff; margin-top: 5px; }
-    .or-separator { margin: 15px 0; color: var(--text-muted); font-size: 0.8rem; letter-spacing: 2px; }
-    .error-text { color: var(--danger); font-size: 0.85rem; margin-top: 10px; min-height: 20px; }
     
-    /* Dashboard Customizations */
-    .dashboard-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 500px; margin-bottom: 30px; }
-    .logout-minimal { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    /* Dashboard Style Setup */
+    .dashboard-header { display: flex; justify-content: flex-start; align-items: center; width: 100%; max-width: 500px; margin-bottom: 30px; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin-bottom: 25px; }
     .stat-card { background: var(--panel-bg); padding: 20px; border-radius: 12px; text-align: center; }
     .card-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
@@ -56,7 +50,7 @@
     .good { color: var(--success); }
     .bad { color: var(--danger); }
     
-    /* Game Simulation Canvas Sandbox Layer */
+    /* Game Simulation Layer */
     #game-container { position: absolute; width: 100%; height: 100%; background: #0b0c10; display: flex; flex-direction: column; }
     #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; pointer-events: none; z-index: 2; }
@@ -70,60 +64,16 @@
     #status-msg { font-size: 0.95rem; font-weight: bold; margin-bottom: 5px; color: var(--primary); }
     .exercise-metrics { font-size: 0.8rem; color: var(--text-muted); }
   </style>
-
-  <!-- Core Firebase Libraries -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  
-  <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    
-    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-       firebase.initializeApp(firebaseConfig);
-    }
-  </script>
 </head>
 <body>
 
-  <!-- VIEW LAYER 1: AUTHENTICATION SYSTEM -->
-  <div id="screen-auth" class="view-layer">
-    <div class="auth-box">
-      <div style="font-size: 3rem; margin-bottom: 10px;">🦠</div>
-      <h2>FITQUEST CAMPAIGN</h2>
-      <p class="subtitle">Please log in or play instantly for free</p>
-      
-      <div class="input-group">
-        <input type="email" id="auth-email" placeholder="Email Address">
-        <input type="password" id="auth-pass" placeholder="Password">
-      </div>
-      
-      <button id="btn-login" class="menu-btn primary">LOG IN</button>
-      <button id="btn-register" class="menu-btn secondary">CREATE ACCOUNT</button>
-      
-      <div class="or-separator">— OR —</div>
-      <button id="btn-guest" class="menu-btn guest-btn">PLAY AS GUEST (NO LOGIN)</button>
-      
-      <div id="auth-error" class="error-text"></div>
-    </div>
-  </div>
-
-  <!-- VIEW LAYER 2: DASHBOARD MAIN MENU -->
-  <div id="screen-dashboard" class="view-layer hidden">
+  <!-- VIEW LAYER 1: MAIN DASHBOARD (Now loads immediately by default) -->
+  <div id="screen-dashboard" class="view-layer">
     <div class="dashboard-header">
       <div>
-        <span style="color:#6c7285; font-size:0.85rem;">Profile Status:</span>
-        <h2 id="user-display-tag" style="margin:2px 0 0 0;">User</h2>
+        <span style="color:#6c7285; font-size:0.85rem;">Campaign Profile:</span>
+        <h2 id="user-display-tag" style="margin:2px 0 0 0;">Challenger</h2>
       </div>
-      <button id="btn-logout" class="logout-minimal">LOG OUT</button>
     </div>
 
     <div class="stat-grid">
@@ -133,11 +83,11 @@
       </div>
       <div class="stat-card">
         <div class="card-label">Workout Streak</div>
-        <div id="dash-streak" class="card-value value-streak">0 DAYS</div>
+        <div id="dash-streak" class="card-value value-streak">1 DAY</div>
       </div>
     </div>
 
-    <!-- Recent Physical Activity Statistics Summary -->
+    <!-- Performance Window -->
     <div id="analytics-box" class="analytics-preview" style="display: none;">
       <h3>📊 RECENT BATTLE PERFORMANCE</h3>
       <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.9rem;">
@@ -152,7 +102,7 @@
     </div>
   </div>
 
-  <!-- VIEW LAYER 3: HARDWARE SENSOR CALIBRATION -->
+  <!-- VIEW LAYER 2: HARDWARE SENSOR CALIBRATION -->
   <div id="screen-calibration" class="view-layer hidden">
     <div class="calibration-box">
       <div style="font-size: 3rem; margin-bottom: 10px;">📱</div>
@@ -180,11 +130,11 @@
     </div>
   </div>
 
-  <!-- VIEW LAYER 4: CORE GAMEPLAY CONTAINER -->
+  <!-- VIEW LAYER 3: CORE GAMEPLAY CONTAINER -->
   <div id="game-container" class="hidden">
     <canvas id="game-canvas"></canvas>
 
-    <!-- UI Visual Layers HUD Display -->
+    <!-- HUD Overlay -->
     <div id="ui-layer">
       <div class="top-bar">
         <div class="hp-housing">
@@ -208,7 +158,7 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- External App Modules -->
   <script src="game.js"></script>
   <script src="app.js"></script>
 </body>
