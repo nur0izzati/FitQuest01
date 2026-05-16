@@ -2,90 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Fitness RPG Platform</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifest.json">
+  <title>FitQuest: Slime King Campaign</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Core Firebase SDK Modules -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
-  <!-- Firebase JavaScript SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Paste your Firebase Web App configuration credentials map right here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY_HERE",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 </head>
 <body>
 
-  <!-- ================= PANEL 1: SPLASH & LOGIN ================= -->
+  <!-- PANEL 1: AUTHENTICATION ROUTING VIEW LAYER -->
   <div id="screen-auth" class="view-layer">
     <div class="auth-box">
-      <div class="logo-container">⚔️</div>
-      <h1>FITQUEST</h1>
-      <p class="subtitle">Tukarkan Tenaga Fizikal Kepada Kuasa RPG</p>
+      <div class="logo-container">🦠</div>
+      <h2>FITQUEST CAMPAIGN</h2>
+      <p class="subtitle">Log masuk untuk menyemak profil kecergasan anda</p>
       
       <div class="input-group">
-        <input type="email" id="auth-email" placeholder="E-mel Akademik">
-        <input type="password" id="auth-password" placeholder="Kata Laluan">
+        <input type="email" id="auth-email" placeholder="Alamat Emel">
+        <input type="password" id="auth-pass" placeholder="Kata Laluan Anda">
       </div>
       
-      <button class="menu-btn primary" onclick="handleAuth('login')">LOG MASUK</button>
-      <button class="menu-btn secondary" onclick="handleAuth('register')">DAFTAR AKAUN Baru</button>
+      <button id="btn-login" class="menu-btn primary">LOG MASUK</button>
+      <button id="btn-register" class="menu-btn secondary">DAFTAR AKAUN</button>
       <div id="auth-error" class="error-text"></div>
     </div>
   </div>
 
-  <!-- ================= PANEL 2: HOME DASHBOARD ================= -->
+  <!-- PANEL 2: CORE DASHBOARD SUMMARY LAYER -->
   <div id="screen-dashboard" class="view-layer hidden">
     <div class="dashboard-header">
-      <h2>Selamat Kembali, <span id="user-display-name">Wira</span>!</h2>
-      <button class="logout-minimal" onclick="logoutSession()">Log Keluar</button>
+      <div>
+        <span style="color:#6c7285; font-size:0.85rem;">Selamat Kembali,</span>
+        <h2 id="user-display-tag" style="margin:2px 0 0 0;">Pengguna</h2>
+      </div>
+      <button id="btn-logout" class="logout-minimal">LOG KELUAR</button>
     </div>
-    
-    <!-- Gamification Stat Cards -->
+
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="card-label">Jumlah Mata (XP)</div>
-        <div class="card-value value-xp" id="dash-xp">0000</div>
+        <div class="card-label">Kumpul Mata</div>
+        <div id="dash-xp" class="card-value value-xp">0 XP</div>
       </div>
       <div class="stat-card">
-        <div class="card-label">Streak Harian</div>
-        <div class="card-value value-streak" id="dash-streak">0 Hari</div>
+        <div class="card-label">Rentak Senaman</div>
+        <div id="dash-streak" class="card-value value-streak">0 HARI</div>
       </div>
     </div>
 
-    <!-- Analytics Panel (Panel 7) -->
-    <div class="analytics-preview">
-      <h3>Prestasi Sesi Lepas</h3>
-      <p>Tenaga Dibakar: <b id="dash-calories">0 kcal</b></p>
-      <p>Masa Aktif: <b id="dash-duration">0 minit</b></p>
+    <!-- Live Session Analytics Tracker Metrics Panel Element -->
+    <div id="analytics-box" class="analytics-preview" style="display: none;">
+      <h3>📊 RINGKASAN SENAMAN TERKINI</h3>
+      <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.95rem;">
+        <div>Keputusan: <b id="summary-outcome">-</b></div>
+        <div>Kalori: <b id="summary-calories">0 kcal</b></div>
+        <div>Masa: <b id="summary-time">0 min</b></div>
+      </div>
     </div>
 
-    <button class="cta-pulse-btn" onclick="navigateTo('screen-calibration')">MULAKAN SENAMAN</button>
+    <div style="margin-top: auto; padding-bottom: 20px;">
+      <button id="btn-start-flow" class="cta-pulse-btn">MULA KEMPEN BARU</button>
+    </div>
   </div>
 
-  <!-- ================= PANEL 3: SENSOR CALIBRATION ================= -->
+  <!-- PANEL 3: ACCELEROMETER ACCURACY CALIBRATION SYSTEM -->
   <div id="screen-calibration" class="view-layer hidden">
     <div class="calibration-box">
-      <h2>SINKRONISASI SENSOR</h2>
-      <p>Sila pegang telefon bimbit anda secara menegak dan lari setempat selama 3 saat untuk penentukuran perkakasan.</p>
-      
+      <div style="font-size: 3.5rem; margin-bottom: 15px;">📱</div>
+      <h2>Pengesahan Sensor</h2>
+      <p style="color:#8f94a6; font-size:0.9rem; line-height:1.5;">
+        Sila pegang peranti anda dalam posisi menegak untuk memastikan sensor akselerometer berfungsi dengan tepat.
+      </p>
+
       <div class="sensor-indicator">
-        <div>Accelerometer: <span id="status-acc" class="bad">Menunggu...</span></div>
-        <div>Gyroscope: <span id="status-gyro" class="bad">Menunggu...</span></div>
+        <div id="cal-x">Sumbu X: <span class="bad">Menunggu data...</span></div>
+        <div id="cal-y">Sumbu Y: <span class="bad">Menunggu data...</span></div>
+        <div id="cal-z">Sumbu Z: <span class="bad">Menunggu data...</span></div>
       </div>
 
-      <button class="menu-btn primary" id="btn-request-sensors" onclick="requestSensorPermissions()">BENARKAN CAPAIAN SENSOR</button>
+      <p id="cal-status-text" style="font-size:0.85rem; color:#00e5ff; font-weight:bold; margin-bottom:30px;">
+        🔄 Menilai tindak balas perkakasan...
+      </p>
+
+      <p id="safari-permission-notice" style="display:none; color:var(--powerup); font-size:0.8rem; margin-bottom:15px;">
+        *Sila tekan butang di bawah untuk membenarkan akses sensor keselamatan sistem pengendalian anda.*
+      </p>
+
+      <button id="btn-ignite-game" class="menu-btn primary">MASUK GELEANGGANG</button>
+      <button id="btn-abort-cal" class="menu-btn secondary">BATAL KEMPEN</button>
     </div>
   </div>
 
-  <!-- ================= PANELS 4 & 5: GAMEPLAY ENGINE LAYER ================= -->
-  <div id="screen-gameplay" class="view-layer hidden">
-    <!-- Your exact game elements injection point -->
-    <div id="game-container">
-       <!-- Game engine dynamic renders go here -->
+  <!-- PANELS 4 & 5: ACTIVE SIMULATED GAMEPLAY CANVAS CONTAINER -->
+  <div id="game-container" class="hidden">
+    <div id="player"></div>
+    <div id="enemy"></div>
+    <div id="powerup-item" class="float-item"></div>
+
+    <div id="joy-boundary">
+      <div id="joy-stick"></div>
+    </div>
+
+    <div id="ui-layer">
+      <div class="top-bar">
+        <div class="hp-housing">
+          <div class="hp-label">Hero Energy</div>
+          <div class="hp-track"><div id="p-fill" class="hp-fill" style="width:100%;"></div></div>
+        </div>
+        <div id="level-badge">LEVEL 1</div>
+        <div class="hp-housing" style="text-align: right;">
+          <div class="hp-label">Slime King Health</div>
+          <div class="hp-track"><div id="e-fill" class="hp-fill" style="width:100%;"></div></div>
+        </div>
+      </div>
+
+      <div class="control-deck">
+        <div id="status-msg">Memuatkan ruang pertempuran...</div>
+        <div class="exercise-metrics" id="motion-display">Langkah: 0.0 | Status: Menunggu</div>
+      </div>
     </div>
   </div>
 
-  <!-- Scripts references -->
-  <script src="app.js"></script>
+  <!-- Project Script Dependencies Executed In Order -->
   <script src="game.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
