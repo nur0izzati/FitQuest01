@@ -89,25 +89,24 @@
       image-rendering: crisp-edges;
       z-index: 6;
       transition: filter 0.2s;
+      background-color: transparent;
     }
 
     #enemy {
-        position: absolute;
-        width: 120px;
-        height: 120px;
-        background-image: url('assets/slime.png');
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: bottom center; /* CRITICAL: Keeps the slime's bottom flat on the ground when it squishes */
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-        z-index: 5;
-        transform-origin: bottom center;     /* Anchors the animation scaling to the floor */
-        transition: width 0.3s, height 0.3s;
-      
-        /* --- THE IDLE ANIMATION TRIGGER --- */
-        animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
-      }
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      background-image: url('assets/slime.png');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: bottom center; 
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      z-index: 5;
+      transform-origin: bottom center;     
+      transition: width 0.3s, height 0.3s;
+      animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
+    }
 
     /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
     .slime-glob {
@@ -154,19 +153,15 @@
     /* --- SQUISHY SLIME IDLE LOGIC --- */
     @keyframes slimeIdleAnimation {
       0% {
-        /* Normal resting shape, slightly floating or resting */
         transform: scaleX(1) scaleY(1) translateY(0);
       }
       45% {
-        /* Stretches upward slightly as it gears up to bounce */
         transform: scaleX(0.93) scaleY(1.07) translateY(-4px);
       }
       90% {
-        /* Drops down and squashes out flat against the floor */
         transform: scaleX(1.18) scaleY(0.82) translateY(0);
       }
       100% {
-        /* Tiny pause at the flattest peak before bouncing back up */
         transform: scaleX(1.2) scaleY(0.8) translateY(0);
       }
     }
@@ -301,7 +296,7 @@
     animationSpeed: 110,
     slimeGlobVelocity: 4,
     slimeAttackFrequency: 2200,
-    stickySlowFactor: 0.35 // Player loses 65% speed in mud, requires higher stepping/effort
+    stickySlowFactor: 0.35 
   };
 
   let runtime = {
@@ -316,8 +311,6 @@
     powerX: 0, powerY: 0,
     powerSpawned: false,
     isStuckInSlime: false,
-    
-    // Slime-specific runtime pools
     slimeGlobs: [],
     slimePuddles: [],
     lastSlimeFired: 0
@@ -402,7 +395,6 @@
   }
 
   function updateSlimeBossScale() {
-    // Dynamic Size Mechanic: The Boss shrinks as its health pool dissolves!
     let dynamicBaseSize = 120 * (0.5 + (runtime.eHP / 200)); 
     UI.enemy.style.width = `${dynamicBaseSize}px`;
     UI.enemy.style.height = `${dynamicBaseSize}px`;
@@ -448,8 +440,9 @@
       runtime.steerX = xOffset / SETTINGS.padRadius;
       runtime.steerY = yOffset / SETTINGS.padRadius;
 
+      // Swap mapping row indices (Index 1 = Right, Index 2 = Left) to line up perfectly with your sprite design
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
-        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
+        runtime.currentDirectionRow = runtime.steerX > 0 ? 1 : 2; 
       } else {
         runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
       }
@@ -479,7 +472,6 @@
     if (totalMagnitude > SETTINGS.moveCutoff) {
       let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
       
-      // If stuck in a toxic puddle, apply heavy locomotion friction!
       if (runtime.isStuckInSlime) {
         workYield *= SETTINGS.stickySlowFactor;
       }
@@ -512,7 +504,6 @@
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
 
-    // Slime Boss Artillery Spawning Engine
     if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
       runtime.lastSlimeFired = timestamp;
       spitSlimeGlob();
@@ -549,7 +540,6 @@
     let targetY = runtime.pY + 50;
     let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
 
-    // Level 3 triggers aggressive firing speed
     let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.slimeGlobVelocity + 2.5 : SETTINGS.slimeGlobVelocity;
 
     runtime.slimeGlobs.push({
@@ -562,7 +552,6 @@
   }
 
   function processSlimeHazards() {
-    // 1. Process Airborne Projectiles
     for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
       let g = runtime.slimeGlobs[i];
       g.x += g.vX;
@@ -570,7 +559,6 @@
       g.element.style.left = `${g.x}px`;
       g.element.style.top = `${g.y}px`;
 
-      // If it leaves the screen boundaries, transform it into a ground puddle hazard!
       if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
         createSlimePuddle(g.x, g.y);
         g.element.remove();
@@ -597,7 +585,6 @@
       }
     }
 
-    // 2. Process Ground Trap Puddles
     let currentlyOnPuddle = false;
     for (let j = runtime.slimePuddles.length - 1; j >= 0; j--) {
       let p = runtime.slimePuddles[j];
@@ -611,7 +598,6 @@
       }
     }
 
-    // React to structural physics change
     if (currentlyOnPuddle !== runtime.isStuckInSlime) {
       runtime.isStuckInSlime = currentlyOnPuddle;
       if (runtime.isStuckInSlime) {
@@ -629,7 +615,6 @@
   }
 
   function createSlimePuddle(rawX, rawY) {
-    // Clamp coordinates onto physical display layout limits
     let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
     let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
 
@@ -641,7 +626,6 @@
 
     runtime.slimePuddles.push({ element: puddle, x: targetX, y: targetY });
 
-    // Cull ground hazards over a standard scale limit to keep map balanced
     if (runtime.slimePuddles.length > 6) {
       let oldPuddle = runtime.slimePuddles.shift();
       oldPuddle.element.remove();
@@ -737,7 +721,7 @@
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
     if (e.code === 'ShiftLeft' || e.code === 'Space') {
-      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; // Puddle dampening layout simulation
+      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; 
       runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
     }
     if (e.code === 'KeyE') processCombatStrike();
@@ -749,7 +733,8 @@
     runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
     runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
     if (runtime.steerX !== 0 || runtime.steerY !== 0) {
-      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
+      // Swapped rows for right/left keyboard input simulation fallback as well
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 1 : 2;
       else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
     }
   }
