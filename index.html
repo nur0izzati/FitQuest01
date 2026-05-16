@@ -3,163 +3,757 @@
 <head>
   <meta charset="UTF-8">
   <title>FitQuest: Slime King Campaign</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#00e5ff">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  
-  <!-- Built-in Stylesheet -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
   <style>
     :root {
-      --bg-dark: #12141c;
-      --panel-bg: #1a1d29;
-      --primary: #00e5ff;
-      --secondary: #7e57c2;
-      --guest: #455a64;
-      --text-main: #ffffff;
-      --text-muted: #8f94a6;
-      --danger: #ff5252;
-      --success: #00e676;
+      --primary: #00ff66;
+      --danger: #ff3333;
+      --powerup: #ffea00;
+      --slime-green: #39ff14;
+      --bg: #0d0e12;
+      --panel: rgba(22, 24, 33, 0.9);
     }
-    * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: var(--bg-dark); color: var(--text-main); overflow: hidden; }
-    .view-layer { display: flex; flex-direction: column; width: 100%; height: 100%; padding: 25px; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; transition: opacity 0.3s ease; }
-    .hidden { display: none !important; opacity: 0; pointer-events: none; }
-    .calibration-box { background: var(--panel-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center; }
-    h2 { margin: 0 0 10px 0; font-size: 1.6rem; letter-spacing: 1px; color: var(--primary); }
-    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
-    .menu-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
-    .menu-btn.primary { background: var(--primary); color: #000; }
-    .menu-btn.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
-    
-    /* Dashboard Style Setup */
-    .dashboard-header { display: flex; justify-content: flex-start; align-items: center; width: 100%; max-width: 500px; margin-bottom: 30px; }
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin-bottom: 25px; }
-    .stat-card { background: var(--panel-bg); padding: 20px; border-radius: 12px; text-align: center; }
-    .card-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
-    .card-value { font-size: 1.6rem; font-weight: bold; }
-    .value-xp { color: var(--primary); }
-    .value-streak { color: #ffb300; }
-    .analytics-preview { background: #222636; border: 1px solid #31374d; border-radius: 12px; padding: 15px; width: 100%; max-width: 500px; margin-bottom: 25px; text-align: left; }
-    .analytics-preview h3 { margin: 0 0 8px 0; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; }
-    .cta-pulse-btn { width: 100%; max-width: 500px; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(126, 87, 194, 0.4); }
-    
-    /* Sensor Indicators */
-    .sensor-indicator { background: #222636; padding: 15px; border-radius: 8px; text-align: left; margin: 20px 0; font-family: monospace; font-size: 0.9rem; }
-    .sensor-indicator div { margin-bottom: 6px; }
-    .good { color: var(--success); }
-    .bad { color: var(--danger); }
-    
-    /* Game Simulation Layer */
-    #game-container { position: absolute; width: 100%; height: 100%; background: #0b0c10; display: flex; flex-direction: column; }
-    #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; pointer-events: none; z-index: 2; }
-    .top-bar { display: flex; justify-content: space-between; width: 100%; pointer-events: auto; }
-    .hp-housing { background: rgba(26,29,41,0.85); padding: 10px; border-radius: 8px; width: 42%; }
-    .hp-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
-    .hp-track { background: #31374d; height: 12px; border-radius: 6px; overflow: hidden; }
-    .hp-fill { background: var(--danger); height: 100%; transition: width 0.2s ease; }
-    #level-badge { background: var(--secondary); padding: 6px 12px; height: fit-content; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
-    .control-deck { background: rgba(26,29,41,0.9); padding: 15px; border-radius: 12px; width: 100%; text-align: center; pointer-events: auto; }
-    #status-msg { font-size: 0.95rem; font-weight: bold; margin-bottom: 5px; color: var(--primary); }
-    .exercise-metrics { font-size: 0.8rem; color: var(--text-muted); }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: #fff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #1b2618 0%, #080d09 100%);
+      overflow: hidden;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 12, 0.98);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .safety-warning-box {
+      background: rgba(255, 51, 51, 0.1);
+      border: 2px dashed var(--danger);
+      border-radius: 12px;
+      padding: 15px;
+      margin: 20px 0;
+      max-width: 320px;
+    }
+
+    .cta-btn {
+      background: linear-gradient(135deg, var(--slime-green) 0%, #00b347 100%);
+      border: none;
+      color: #000;
+      padding: 16px 45px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(57, 255, 20, 0.4);
+    }
+
+    #player {
+      position: absolute;
+      width: 100px;           
+      height: 100px;          
+      will-change: left, top;
+      background-image: url('assets/hero-sprite.png'); 
+      background-repeat: no-repeat;
+      background-size: 300% 400%;   
+      background-position: 50% 0%;  
+      image-rendering: pixelated;   
+      image-rendering: crisp-edges;
+      z-index: 6;
+      transition: filter 0.2s;
+    }
+
+    #enemy {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background-image: url('assets/slime.png');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: bottom center; /* CRITICAL: Keeps the slime's bottom flat on the ground when it squishes */
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        z-index: 5;
+        transform-origin: bottom center;     /* Anchors the animation scaling to the floor */
+        transition: width 0.3s, height 0.3s;
+      
+        /* --- THE IDLE ANIMATION TRIGGER --- */
+        animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
+      }
+
+    /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
+    .slime-glob {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      background: radial-gradient(circle, #ccff00 20%, #22aa00 80%, transparent 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 15px var(--slime-green);
+      z-index: 7;
+    }
+
+    .slime-puddle {
+      position: absolute;
+      width: 60px;
+      height: 25px;
+      background: rgba(57, 255, 20, 0.5);
+      border-radius: 50%;
+      box-shadow: 0 0 12px #22aa00;
+      z-index: 4;
+      animation: meltIn 0.3s ease-out;
+    }
+
+    #powerup-item {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle, var(--powerup) 0%, #ff8800 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 20px var(--powerup);
+      display: none;
+      z-index: 4;
+    }
+
+    .attack-pulse { animation: hitPulse 0.2s ease-out; }
+    .hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
+    .float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
+
+    @keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
+    @keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
+    @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+    @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* --- SQUISHY SLIME IDLE LOGIC --- */
+    @keyframes slimeIdleAnimation {
+      0% {
+        /* Normal resting shape, slightly floating or resting */
+        transform: scaleX(1) scaleY(1) translateY(0);
+      }
+      45% {
+        /* Stretches upward slightly as it gears up to bounce */
+        transform: scaleX(0.93) scaleY(1.07) translateY(-4px);
+      }
+      90% {
+        /* Drops down and squashes out flat against the floor */
+        transform: scaleX(1.18) scaleY(0.82) translateY(0);
+      }
+      100% {
+        /* Tiny pause at the flattest peak before bouncing back up */
+        transform: scaleX(1.2) scaleY(0.8) translateY(0);
+      }
+    }
+
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 25px;
+      z-index: 10;
+    }
+
+    .top-bar { display: flex; justify-content: space-between; width: 100%; }
+    .hp-housing { width: 38%; }
+    .hp-label { font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; color: #8f94a6; font-weight: bold; }
+    .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
+    .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
+    #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
+    #e-fill { background: linear-gradient(90deg, var(--slime-green), #aa00ff); }
+
+    #level-badge {
+      background: #1f222e;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--powerup);
+    }
+
+    .control-deck {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 15px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    #status-msg { font-size: 1.05rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; height: 24px; }
+    .exercise-metrics { font-size: 0.8rem; color: #6c7285; text-transform: uppercase; }
+
+    #joy-boundary {
+      position: absolute;
+      bottom: 140px;
+      left: 35px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    #joy-stick {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- VIEW LAYER 1: MAIN DASHBOARD (Now loads immediately by default) -->
-  <div id="screen-dashboard" class="view-layer">
-    <div class="dashboard-header">
-      <div>
-        <span style="color:#6c7285; font-size:0.85rem;">Campaign Profile:</span>
-        <h2 id="user-display-tag" style="margin:2px 0 0 0;">Challenger</h2>
-      </div>
+<div id="game-container">
+  <div id="overlay">
+    <h1 id="menu-title">FITQUEST: SLIME KING</h1>
+    
+    <div class="safety-warning-box" id="safety-box">
+      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ SAFETY WARNING:</b>
+      <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
+        Please make sure your surroundings are completely clear. <b>DO NOT</b> play near open drains, roads, or tight spaces that could cause a tripping hazard!
+      </p>
     </div>
 
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="card-label">Total Reward Points</div>
-        <div id="dash-xp" class="card-value value-xp">0 XP</div>
-      </div>
-      <div class="stat-card">
-        <div class="card-label">Workout Streak</div>
-        <div id="dash-streak" class="card-value value-streak">1 DAY</div>
-      </div>
-    </div>
-
-    <!-- Performance Window -->
-    <div id="analytics-box" class="analytics-preview" style="display: none;">
-      <h3>📊 RECENT BATTLE PERFORMANCE</h3>
-      <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.9rem;">
-        <div>Status: <b id="summary-outcome">-</b></div>
-        <div>Calories Burned: <b id="summary-calories">0 kcal</b></div>
-        <div>Duration: <b id="summary-time">0 min</b></div>
-      </div>
-    </div>
-
-    <div style="margin-top: auto; width: 100%; max-width: 500px; text-align: center; padding-bottom: 20px;">
-      <button id="btn-start-flow" class="cta-pulse-btn">START PHYSICAL GAME</button>
-    </div>
+    <p id="menu-desc" style="color: #7e8494; margin-bottom: 25px; max-width: 290px; font-size: 0.9rem;">
+      Use the joystick to choose your direction. Jog or run in place to move your pixel character forward!
+    </p>
+    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START CAMPAIGN</button>
   </div>
 
-  <!-- VIEW LAYER 2: HARDWARE SENSOR CALIBRATION -->
-  <div id="screen-calibration" class="view-layer hidden">
-    <div class="calibration-box">
-      <div style="font-size: 3rem; margin-bottom: 10px;">📱</div>
-      <h2>Phone Sensor Test</h2>
-      <p style="color:#8f94a6; font-size:0.85rem; line-height:1.4;">
-        Shake or move your phone slightly to initialize the hardware input connection.
-      </p>
+  <div id="player"></div>
+  <div id="enemy"></div>
+  <div id="powerup-item" class="float-item"></div>
 
-      <div class="sensor-indicator">
-        <div id="cal-x">X-Axis: <span class="bad">Waiting for hardware...</span></div>
-        <div id="cal-y">Y-Axis: <span class="bad">Waiting for hardware...</span></div>
-        <div id="cal-z">Z-Axis: <span class="bad">Waiting for hardware...</span></div>
-      </div>
-
-      <p id="cal-status-text" style="font-size:0.85rem; color:#00e5ff; font-weight:bold; margin-bottom:20px;">
-        🔄 Detecting Motion Sensor response...
-      </p>
-
-      <p id="safari-permission-notice" style="display:none; color:#ffb300; font-size:0.8rem; margin-bottom:15px;">
-        *Please click the button below if the device requests system security permissions.*
-      </p>
-
-      <button id="btn-ignite-game" class="menu-btn primary">ENTER GAME</button>
-      <button id="btn-abort-cal" class="menu-btn secondary">GO BACK</button>
-    </div>
+  <div id="joy-boundary">
+    <div id="joy-stick"></div>
   </div>
 
-  <!-- VIEW LAYER 3: CORE GAMEPLAY CONTAINER -->
-  <div id="game-container" class="hidden">
-    <canvas id="game-canvas"></canvas>
-
-    <!-- HUD Overlay -->
-    <div id="ui-layer">
-      <div class="top-bar">
-        <div class="hp-housing">
-          <div class="hp-label">Hero HP</div>
-          <div class="hp-track"><div id="p-fill" class="hp-fill" style="width:100%; background:#00e676;"></div></div>
-        </div>
-        <div id="level-badge">Slime King Boss</div>
-        <div class="hp-housing" style="text-align: right;">
-          <div class="hp-label">Boss HP</div>
-          <div class="hp-track"><div id="e-fill" class="hp-fill" style="width:100%;"></div></div>
-        </div>
+  <div id="ui-layer">
+    <div class="top-bar">
+      <div class="hp-housing">
+        <div class="hp-label">Hero Energy</div>
+        <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
       </div>
-
-      <div class="control-deck">
-        <div id="status-msg">Please begin physical activity!</div>
-        <div class="exercise-metrics" id="motion-display">Shakes Detected: 0 | Status: Ready</div>
-        <button id="btn-force-end" style="margin-top:10px; background:#ff5252; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
-           End Session (Simulate Finish)
-        </button>
+      <div id="level-badge">LEVEL 1</div>
+      <div class="hp-housing" style="text-align: right;">
+        <div class="hp-label">Slime King Health</div>
+        <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
-  </div>
 
-  <!-- External App Modules -->
-  <script src="game.js"></script>
-  <script src="app.js"></script>
+    <div class="control-deck">
+      <div id="status-msg">Ready for action...</div>
+      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Stationary</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SETTINGS = {
+    moveCutoff: 11.8,
+    shakeCutoff: 23.5,
+    combatWindow: 500,
+    hitBoxRange: 75,
+    frictionFactor: 0.88,
+    accelerationGain: 0.7,
+    velocityCap: 6.5,
+    padRadius: 60,
+    animationSpeed: 110,
+    slimeGlobVelocity: 4,
+    slimeAttackFrequency: 2200,
+    stickySlowFactor: 0.35 // Player loses 65% speed in mud, requires higher stepping/effort
+  };
+
+  let runtime = {
+    pX: 0, pY: 0, eX: 0, eY: 0,
+    steerX: 0, steerY: 0,
+    currentSpeed: 0,
+    pHP: 100, eHP: 100,
+    lastAttack: 0, halted: true, padActive: false,
+    currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
+    currentLevel: 1,
+    hasPowerUpBoost: false,
+    powerX: 0, powerY: 0,
+    powerSpawned: false,
+    isStuckInSlime: false,
+    
+    // Slime-specific runtime pools
+    slimeGlobs: [],
+    slimePuddles: [],
+    lastSlimeFired: 0
+  };
+
+  const UI = {
+    container: document.getElementById('game-container'),
+    overlay: document.getElementById('overlay'),
+    title: document.getElementById('menu-title'),
+    safety: document.getElementById('safety-box'),
+    desc: document.getElementById('menu-desc'),
+    btn: document.getElementById('action-btn'),
+    badge: document.getElementById('level-badge'),
+    player: document.getElementById('player'),
+    enemy: document.getElementById('enemy'),
+    power: document.getElementById('powerup-item'),
+    pFill: document.getElementById('p-fill'),
+    eFill: document.getElementById('e-fill'),
+    status: document.getElementById('status-msg'),
+    motionInfo: document.getElementById('motion-display'),
+    padBoundary: document.getElementById('joy-boundary'),
+    padStick: document.getElementById('joy-stick')
+  };
+
+  function igniteEngine() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
+    } else {
+      setupEnvironment();
+    }
+  }
+
+  function setupEnvironment() {
+    UI.overlay.style.display = 'none';
+    runtime.halted = false;
+    
+    runtime.pHP = 100;
+    UI.pFill.style.width = '100%';
+    runtime.pX = window.innerWidth * 0.15;
+    runtime.pY = window.innerHeight / 2 - 50;
+    
+    clearAllSlimeHazards();
+    resetBossForLevel();
+
+    window.removeEventListener('devicemotion', evaluateDeviceSensors);
+    window.addEventListener('devicemotion', evaluateDeviceSensors, false);
+    buildJoystickControl();
+
+    window.removeEventListener('keydown', simulateHardwareDown);
+    window.addEventListener('keydown', simulateHardwareDown);
+    window.removeEventListener('keyup', simulateHardwareUp);
+    window.addEventListener('keyup', simulateHardwareUp);
+
+    requestAnimationFrame(engineFrameTick);
+  }
+
+  function resetBossForLevel() {
+    runtime.eX = window.innerWidth * 0.75;
+    runtime.eY = window.innerHeight / 2 - 60;
+    runtime.eHP = 100;
+    runtime.hasPowerUpBoost = false;
+    runtime.isStuckInSlime = false;
+    UI.eFill.style.width = '100%';
+    UI.player.style.filter = 'none';
+
+    updateSlimeBossScale();
+
+    if (runtime.currentLevel >= 2) {
+      spawnPowerUpRandomly();
+    } else {
+      runtime.powerSpawned = false;
+      UI.power.style.display = 'none';
+    }
+    refreshViewportLayouts();
+  }
+
+  function clearAllSlimeHazards() {
+    runtime.slimeGlobs.forEach(g => g.element.remove());
+    runtime.slimePuddles.forEach(p => p.element.remove());
+    runtime.slimeGlobs = [];
+    runtime.slimePuddles = [];
+  }
+
+  function updateSlimeBossScale() {
+    // Dynamic Size Mechanic: The Boss shrinks as its health pool dissolves!
+    let dynamicBaseSize = 120 * (0.5 + (runtime.eHP / 200)); 
+    UI.enemy.style.width = `${dynamicBaseSize}px`;
+    UI.enemy.style.height = `${dynamicBaseSize}px`;
+  }
+
+  function spawnPowerUpRandomly() {
+    runtime.powerSpawned = true;
+    runtime.hasPowerUpBoost = false;
+    
+    const horizontalMargin = window.innerWidth * 0.2;
+    const verticalMargin = window.innerHeight * 0.2;
+    
+    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 40);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 40);
+
+    UI.power.style.left = `${runtime.powerX}px`;
+    UI.power.style.top = `${runtime.powerY}px`;
+    UI.power.style.display = 'block';
+    
+    UI.status.textContent = "⚡ Anti-Slime Crystal spawned! Grab it quickly to shatter the shield!";
+    UI.status.style.color = "var(--powerup)";
+  }
+
+  function buildJoystickControl() {
+    const bound = UI.padBoundary;
+    const stick = UI.padStick;
+
+    function trackInput(e) {
+      if (!runtime.padActive || runtime.halted) return;
+      let targetTouch = e.touches ? e.touches[0] : e;
+      let geoBox = bound.getBoundingClientRect();
+      
+      let xOffset = targetTouch.clientX - (geoBox.left + SETTINGS.padRadius);
+      let yOffset = targetTouch.clientY - (geoBox.top + SETTINGS.padRadius);
+      let absoluteLength = Math.sqrt(xOffset * xOffset + yOffset * yOffset);
+
+      if (absoluteLength > SETTINGS.padRadius) {
+        xOffset = (xOffset / absoluteLength) * SETTINGS.padRadius;
+        yOffset = (yOffset / absoluteLength) * SETTINGS.padRadius;
+      }
+
+      stick.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+      runtime.steerX = xOffset / SETTINGS.padRadius;
+      runtime.steerY = yOffset / SETTINGS.padRadius;
+
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
+        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
+      } else {
+        runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
+      }
+    }
+
+    function severInput() {
+      runtime.padActive = false;
+      stick.style.transform = `translate(0px, 0px)`;
+      runtime.steerX = 0; runtime.steerY = 0;
+    }
+
+    bound.addEventListener('touchstart', (e) => { runtime.padActive = true; trackInput(e); }, {passive: false});
+    window.addEventListener('touchmove', trackInput, {passive: false});
+    window.addEventListener('touchend', severInput);
+    bound.addEventListener('mousedown', (e) => { runtime.padActive = true; trackInput(e); });
+    window.addEventListener('mousemove', trackInput);
+    window.addEventListener('mouseup', severInput);
+  }
+
+  function evaluateDeviceSensors(event) {
+    if (runtime.halted) return;
+    let sensors = event.accelerationIncludingGravity;
+    if (!sensors) return;
+
+    let totalMagnitude = Math.sqrt((sensors.x||0)**2 + (sensors.y||0)**2 + (sensors.z||0)**2);
+
+    if (totalMagnitude > SETTINGS.moveCutoff) {
+      let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
+      
+      // If stuck in a toxic puddle, apply heavy locomotion friction!
+      if (runtime.isStuckInSlime) {
+        workYield *= SETTINGS.stickySlowFactor;
+      }
+
+      runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
+      UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSlime ? 'STUCK (Run Faster!)' : 'Moving'}`;
+    }
+
+    if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
+  }
+
+  function engineFrameTick(timestamp) {
+    if (runtime.halted) return;
+
+    runtime.currentSpeed *= SETTINGS.frictionFactor;
+
+    if (runtime.currentSpeed < 0.1) {
+      runtime.currentSpeed = 0;
+      runtime.currentFrameIndex = 1; 
+    } else {
+      if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
+        runtime.lastFrameUpdateTime = timestamp;
+        runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
+      }
+    }
+
+    runtime.pX += runtime.steerX * runtime.currentSpeed;
+    runtime.pY += runtime.steerY * runtime.currentSpeed;
+
+    runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
+    runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
+
+    // Slime Boss Artillery Spawning Engine
+    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
+      runtime.lastSlimeFired = timestamp;
+      spitSlimeGlob();
+    }
+    
+    processSlimeHazards();
+
+    if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
+      let dx = (runtime.pX + 50) - (runtime.powerX + 20);
+      let dy = (runtime.pY + 50) - (runtime.powerY + 20);
+      let pDist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (pDist < 55) {
+        runtime.hasPowerUpBoost = true;
+        UI.power.style.display = 'none';
+        UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
+        UI.status.textContent = `⚡ EMPOWERED! Slime Shield broken, attack now!`;
+        UI.status.style.color = 'var(--powerup)';
+      }
+    }
+
+    refreshViewportLayouts();
+    requestAnimationFrame(engineFrameTick);
+  }
+
+  function spitSlimeGlob() {
+    let glob = document.createElement('div');
+    glob.className = 'slime-glob';
+    glob.style.left = `${runtime.eX + 40}px`;
+    glob.style.top = `${runtime.eY + 40}px`;
+    UI.container.appendChild(glob);
+
+    let targetX = runtime.pX + 50;
+    let targetY = runtime.pY + 50;
+    let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
+
+    // Level 3 triggers aggressive firing speed
+    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.slimeGlobVelocity + 2.5 : SETTINGS.slimeGlobVelocity;
+
+    runtime.slimeGlobs.push({
+      element: glob,
+      x: runtime.eX + 40,
+      y: runtime.eY + 40,
+      vX: Math.cos(angle) * velocityMultiplier,
+      vY: Math.sin(angle) * velocityMultiplier
+    });
+  }
+
+  function processSlimeHazards() {
+    // 1. Process Airborne Projectiles
+    for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
+      let g = runtime.slimeGlobs[i];
+      g.x += g.vX;
+      g.y += g.vY;
+      g.element.style.left = `${g.x}px`;
+      g.element.style.top = `${g.y}px`;
+
+      // If it leaves the screen boundaries, transform it into a ground puddle hazard!
+      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
+        createSlimePuddle(g.x, g.y);
+        g.element.remove();
+        runtime.slimeGlobs.splice(i, 1);
+        continue;
+      }
+
+      let dx = g.x - (runtime.pX + 50);
+      let dy = g.y - (runtime.pY + 50);
+      let range = Math.sqrt(dx*dx + dy*dy);
+
+      if (range < 45) { 
+        g.element.remove();
+        runtime.slimeGlobs.splice(i, 1);
+        
+        runtime.pHP = Math.max(runtime.pHP - 12, 0);
+        UI.pFill.style.width = `${runtime.pHP}%`;
+        UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
+        
+        UI.status.textContent = `🤢 Sticky! Hit by Slime Glob! HP Reduced!`;
+        UI.status.style.color = "var(--danger)";
+
+        if (runtime.pHP <= 0) triggerGameOverScreen();
+      }
+    }
+
+    // 2. Process Ground Trap Puddles
+    let currentlyOnPuddle = false;
+    for (let j = runtime.slimePuddles.length - 1; j >= 0; j--) {
+      let p = runtime.slimePuddles[j];
+      
+      let dx = p.x - (runtime.pX + 50);
+      let dy = p.y - (runtime.pY + 50);
+      let trapDistance = Math.sqrt(dx*dx + dy*dy);
+
+      if (trapDistance < 50) {
+        currentlyOnPuddle = true;
+      }
+    }
+
+    // React to structural physics change
+    if (currentlyOnPuddle !== runtime.isStuckInSlime) {
+      runtime.isStuckInSlime = currentlyOnPuddle;
+      if (runtime.isStuckInSlime) {
+        UI.player.style.filter = runtime.hasPowerUpBoost 
+          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.6) hue-rotate(60deg)'
+          : 'sepia(0.8) hue-rotate(60deg) brightness(0.8)';
+        UI.status.textContent = `⚠️ You are trapped in a Slime Puddle! Increase step rate!`;
+        UI.status.style.color = "#ffaa00";
+      } else {
+        UI.player.style.filter = runtime.hasPowerUpBoost 
+          ? 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)' 
+          : 'none';
+      }
+    }
+  }
+
+  function createSlimePuddle(rawX, rawY) {
+    // Clamp coordinates onto physical display layout limits
+    let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
+    let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
+
+    let puddle = document.createElement('div');
+    puddle.className = 'slime-puddle';
+    puddle.style.left = `${targetX}px`;
+    puddle.style.top = `${targetY}px`;
+    UI.container.appendChild(puddle);
+
+    runtime.slimePuddles.push({ element: puddle, x: targetX, y: targetY });
+
+    // Cull ground hazards over a standard scale limit to keep map balanced
+    if (runtime.slimePuddles.length > 6) {
+      let oldPuddle = runtime.slimePuddles.shift();
+      oldPuddle.element.remove();
+    }
+  }
+
+  function triggerGameOverScreen() {
+    runtime.halted = true;
+    clearAllSlimeHazards();
+    UI.title.textContent = "💥 CAMPAIGN FAILED!";
+    UI.desc.textContent = "Your Hero Energy was completely drained by the Slime King! Let's run again to try once more.";
+    UI.btn.textContent = "RETRY THIS LEVEL";
+    UI.overlay.style.display = 'flex';
+  }
+
+  function refreshViewportLayouts() {
+    UI.player.style.left = `${runtime.pX}px`;
+    UI.player.style.top = `${runtime.pY}px`;
+    UI.enemy.style.left = `${runtime.eX}px`;
+    UI.enemy.style.top = `${runtime.eY}px`;
+
+    let xPercentage = runtime.currentFrameIndex * 50;  
+    let yPercentage = runtime.currentDirectionRow * 33.333; 
+    
+    UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
+  }
+  
+  function processCombatStrike() {
+    if (runtime.halted) return;
+    let timeStamp = Date.now();
+    if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
+    runtime.lastAttack = timeStamp;
+
+    let eWidth = parseInt(UI.enemy.style.width) || 120;
+    let distanceVector = Math.sqrt(((runtime.eX + (eWidth/2)) - (runtime.pX + 50))**2 + ((runtime.eY + (eWidth/2)) - (runtime.pY + 50))**2);
+    
+    if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
+      if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
+        UI.status.textContent = "🛡️ Immune! Thick mucus protects the boss. Find a Crystal first!";
+        UI.status.style.color = "var(--danger)";
+        return;
+      }
+
+      let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
+      
+      UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
+      runtime.eHP = Math.max(runtime.eHP - dmg, 0); 
+      UI.eFill.style.width = `${runtime.eHP}%`;
+      UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
+      
+      updateSlimeBossScale();
+      
+      UI.status.textContent = `💥 HIT! The Slime shrinks! Boss HP: ${runtime.eHP}%`;
+      UI.status.style.color = "var(--primary)";
+
+      if (runtime.eHP <= 0) progressCampaignLevel();
+    } else {
+      UI.status.textContent = "❌ Too far away! Get closer to the Slime King while running!";
+    }
+  }
+
+  function progressCampaignLevel() {
+    runtime.halted = true;
+    clearAllSlimeHazards();
+    window.removeEventListener('devicemotion', evaluateDeviceSensors);
+
+    if (runtime.currentLevel < 3) {
+      runtime.currentLevel++;
+      setTimeout(() => {
+        UI.title.textContent = `LEVEL ${runtime.currentLevel} STARTING!`;
+        UI.safety.style.display = 'none'; 
+        UI.desc.innerHTML = runtime.currentLevel === 2 
+          ? "<b>Level 2 Alert:</b> Slime King has formed a thick mucus shield and is spitting <b>Slime Globs</b>! Dodge them or you'll get stuck in messy puddles!"
+          : "<b>Final Stage Alert:</b> The Slime output has become extremely aggressive! Maintain high movement speeds to dodge incoming traps!";
+        UI.btn.textContent = `PROCEED TO LEVEL ${runtime.currentLevel}`;
+        UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+        UI.overlay.style.display = 'flex';
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        UI.title.textContent = "🏆 CONGRATULATIONS! SLIME KING DEFEATED!";
+        UI.safety.style.display = 'none';
+        UI.desc.textContent = "You successfully defeated the Slime King and cleared all 3 adventure exercise phases!";
+        UI.btn.textContent = "PLAY CAMPAIGN AGAIN";
+        runtime.currentLevel = 1;
+        UI.badge.textContent = `LEVEL 1`;
+        UI.overlay.style.display = 'flex';
+      }, 1000);
+    }
+  }
+
+  let testKeys = {};
+  function simulateHardwareDown(e) {
+    testKeys[e.code] = true;
+    if (e.code === 'ShiftLeft' || e.code === 'Space') {
+      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; // Puddle dampening layout simulation
+      runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
+    }
+    if (e.code === 'KeyE') processCombatStrike();
+    mapSimulatedSteering();
+  }
+  function simulateHardwareUp(e) { testKeys[e.code] = false; mapSimulatedSteering(); }
+  function mapSimulatedSteering() {
+    if (runtime.padActive || runtime.halted) return;
+    runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
+    runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
+    if (runtime.steerX !== 0 || runtime.steerY !== 0) {
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
+      else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
+    }
+  }
+</script>
+
 </body>
 </html>
