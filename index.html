@@ -37,6 +37,9 @@
       height: 100vh;
       background: radial-gradient(circle at center, #1b2618 0%, #080d09 100%);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     #overlay {
@@ -156,17 +159,11 @@
       100% { transform: scaleX(1.2) scaleY(0.8) translateY(0); }
     }
 
-    #ui-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
+    /* --- FIXED HUD LAYOUT FOR MOBILE SCREENS --- */
+    #ui-top-layer {
       width: 100%;
-      height: 100%;
+      padding: 20px 20px 0 20px;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 25px;
       z-index: 10;
     }
 
@@ -186,6 +183,46 @@
       font-size: 0.8rem;
       font-weight: bold;
       color: var(--powerup);
+      align-self: flex-start;
+    }
+
+    /* Bottom HUD cluster container */
+    #ui-bottom-layer {
+      width: 100%;
+      padding: 0 20px 15px 20px; /* Added breathing room for physical bottom navigation bars */
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Joystick wrapper now aligns dynamically without absolute overlaps */
+    .joystick-zone {
+      display: flex;
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    #joy-boundary {
+      width: 110px;
+      height: 110px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto; /* Keeps joystick responsive */
+    }
+
+    #joy-stick {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
     }
 
     .control-deck {
@@ -193,42 +230,33 @@
       background: var(--panel);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 20px;
-      padding: 15px;
+      padding: 12px;
       text-align: center;
       backdrop-filter: blur(12px);
+      pointer-events: auto;
     }
 
-    #status-msg { font-size: 1.05rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; height: 24px; }
-    .exercise-metrics { font-size: 0.8rem; color: #6c7285; text-transform: uppercase; }
-
-    #joy-boundary {
-      position: absolute;
-      bottom: 140px;
-      left: 35px;
-      width: 120px;
-      height: 120px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 20;
-    }
-
-    #joy-stick {
-      width: 48px;
-      height: 48px;
-      background: rgba(255, 255, 255, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      border-radius: 50%;
-      pointer-events: none;
-    }
+    #status-msg { font-size: 0.95rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; min-height: 22px; }
+    .exercise-metrics { font-size: 0.75rem; color: #6c7285; text-transform: uppercase; }
   </style>
 </head>
 <body>
 
 <div id="game-container">
+  <div id="ui-top-layer">
+    <div class="top-bar">
+      <div class="hp-housing">
+        <div class="hp-label">Hero Energy</div>
+        <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
+      </div>
+      <div id="level-badge">LEVEL 1</div>
+      <div class="hp-housing" style="text-align: right;">
+        <div class="hp-label">Slime King Health</div>
+        <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
   <div id="overlay">
     <h1 id="menu-title">FITQUEST: SLIME KING</h1>
     
@@ -249,20 +277,10 @@
   <div id="enemy"></div>
   <div id="powerup-item" class="float-item"></div>
 
-  <div id="joy-boundary">
-    <div id="joy-stick"></div>
-  </div>
-
-  <div id="ui-layer">
-    <div class="top-bar">
-      <div class="hp-housing">
-        <div class="hp-label">Hero Energy</div>
-        <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
-      </div>
-      <div id="level-badge">LEVEL 1</div>
-      <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Slime King Health</div>
-        <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
+  <div id="ui-bottom-layer">
+    <div class="joystick-zone">
+      <div id="joy-boundary">
+        <div id="joy-stick"></div>
       </div>
     </div>
 
@@ -282,7 +300,7 @@
     frictionFactor: 0.88,
     accelerationGain: 0.7,
     velocityCap: 6.5,
-    padRadius: 60,
+    padRadius: 55, // Adjusted slightly to match scaled container bounding geometry
     animationSpeed: 110,
     slimeGlobVelocity: 4,
     slimeAttackFrequency: 2200,
@@ -340,7 +358,7 @@
     runtime.pHP = 100;
     UI.pFill.style.width = '100%';
     runtime.pX = window.innerWidth * 0.15;
-    runtime.pY = window.innerHeight / 2 - 50;
+    runtime.pY = window.innerHeight * 0.35; // Position player comfortably clear of HUD decks
     
     clearAllSlimeHazards();
     resetBossForLevel();
@@ -359,7 +377,7 @@
 
   function resetBossForLevel() {
     runtime.eX = window.innerWidth * 0.75;
-    runtime.eY = window.innerHeight / 2 - 60;
+    runtime.eY = window.innerHeight * 0.35;
     runtime.eHP = 100;
     runtime.hasPowerUpBoost = false;
     runtime.isStuckInSlime = false;
@@ -398,7 +416,7 @@
     const verticalMargin = window.innerHeight * 0.2;
     
     runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 40);
-    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 40);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight * 0.4);
 
     UI.power.style.left = `${runtime.powerX}px`;
     UI.power.style.top = `${runtime.powerY}px`;
@@ -430,7 +448,6 @@
       runtime.steerX = xOffset / SETTINGS.padRadius;
       runtime.steerY = yOffset / SETTINGS.padRadius;
 
-      // Corrected row lookups (Index 2 = Right, Index 1 = Left) to fix inverse mirroring
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
         runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
       } else {
@@ -491,8 +508,10 @@
     runtime.pX += runtime.steerX * runtime.currentSpeed;
     runtime.pY += runtime.steerY * runtime.currentSpeed;
 
+    // Bounds updated dynamically to account for bottom HUD height restrictions on mobile viewports
+    let bottomLimit = window.innerHeight - (document.getElementById('ui-bottom-layer').offsetHeight + 100);
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
-    runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
+    runtime.pY = Math.max(0, Math.min(bottomLimit, runtime.pY));
 
     if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
       runtime.lastSlimeFired = timestamp;
@@ -542,6 +561,8 @@
   }
 
   function processSlimeHazards() {
+    let bottomLimit = window.innerHeight - document.getElementById('ui-bottom-layer').offsetHeight;
+
     for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
       let g = runtime.slimeGlobs[i];
       g.x += g.vX;
@@ -549,8 +570,8 @@
       g.element.style.left = `${g.x}px`;
       g.element.style.top = `${g.y}px`;
 
-      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
-        createSlimePuddle(g.x, g.y);
+      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > bottomLimit) {
+        if (g.y <= bottomLimit) createSlimePuddle(g.x, g.y);
         g.element.remove();
         runtime.slimeGlobs.splice(i, 1);
         continue;
@@ -605,8 +626,9 @@
   }
 
   function createSlimePuddle(rawX, rawY) {
+    let bottomLimit = window.innerHeight - (document.getElementById('ui-bottom-layer').offsetHeight + 35);
     let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
-    let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
+    let targetY = Math.max(40, Math.min(bottomLimit, rawY));
 
     let puddle = document.createElement('div');
     puddle.className = 'slime-puddle';
@@ -723,7 +745,6 @@
     runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
     runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
     if (runtime.steerX !== 0 || runtime.steerY !== 0) {
-      // Swapped keyboard fallback indices here as well to fix mirroring
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
       else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
     }
