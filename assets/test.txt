@@ -1,0 +1,6 @@
+├── index.html        # The main SPA view shell & UI overlays
+├── game.js           # Accelerometer tracking & main gameplay logic
+├── app.js            # Firebase Auth & navigation control (optional but recommended)
+├── manifest.json     # PWA mobile app installation settings
+├── styles.css        # The UI layout design stylesheet
+└── assets/           # Game audio, sprites, and app icons
