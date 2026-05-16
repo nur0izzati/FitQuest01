@@ -1,29 +1,45 @@
-const CACHE_NAME = "fitquest-v1";
-
-const urlsToCache = [
-    "./",
-    "./index.html",
-    "./game.js",
-    "./manifest.json"
+const CACHE_NAME = 'fitquest-cache-v1';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/app.js',
+  '/game.js',
+  '/manifest.json',
+  '/assets/slime.png',
+  '/assets/hero-sprite.png'
 ];
 
-self.addEventListener("install", event => {
-
-    event.waitUntil(
-
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-    );
+// Install Event - Caching Assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('Caching application assets...');
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
 });
 
-self.addEventListener("fetch", event => {
+// Activate Event - Clean old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+});
 
-    event.respondWith(
-
-        caches.match(event.request)
-            .then(response => {
-
-                return response || fetch(event.request);
-            })
-    );
+// Fetch Event - Network First falling back to Cache
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });
