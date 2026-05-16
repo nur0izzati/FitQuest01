@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>FitQuest: Slime King Campaign</title>
@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#00e5ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   
-  <!-- CSS Gaya Rupa Terbina (Built-in Stylesheet) -->
+  <!-- Built-in Stylesheet -->
   <style>
     :root {
       --bg-dark: #12141c;
@@ -58,7 +58,8 @@
     
     /* Game Simulation Canvas Sandbox Layer */
     #game-container { position: absolute; width: 100%; height: 100%; background: #0b0c10; display: flex; flex-direction: column; }
-    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; pointer-events: none; }
+    #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; pointer-events: none; z-index: 2; }
     .top-bar { display: flex; justify-content: space-between; width: 100%; pointer-events: auto; }
     .hp-housing { background: rgba(26,29,41,0.85); padding: 10px; border-radius: 8px; width: 42%; }
     .hp-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
@@ -70,13 +71,13 @@
     .exercise-metrics { font-size: 0.8rem; color: var(--text-muted); }
   </style>
 
-  <!-- Pustaka Core Firebase (Boleh dikekalkan walaupun menggunakan Mod Tetamu) -->
+  <!-- Core Firebase Libraries -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <script>
-    // Konfigurasi Firebase Anda (Sila isi jika mahu menggunakan sistem online akaun)
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -85,127 +86,129 @@
       messagingSenderId: "YOUR_SENDER_ID",
       appId: "YOUR_APP_ID"
     };
-    // Elakkan crash jika strings konfigurasi belum diganti
-    if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
        firebase.initializeApp(firebaseConfig);
     }
   </script>
 </head>
 <body>
 
-  <!-- VIEW LAYER 1: SISTEM AUTHENTICATION -->
+  <!-- VIEW LAYER 1: AUTHENTICATION SYSTEM -->
   <div id="screen-auth" class="view-layer">
     <div class="auth-box">
       <div style="font-size: 3rem; margin-bottom: 10px;">🦠</div>
       <h2>FITQUEST CAMPAIGN</h2>
-      <p class="subtitle">Sila log masuk atau main terus secara percuma</p>
+      <p class="subtitle">Please log in or play instantly for free</p>
       
       <div class="input-group">
-        <input type="email" id="auth-email" placeholder="Alamat Emel">
-        <input type="password" id="auth-pass" placeholder="Kata Laluan">
+        <input type="email" id="auth-email" placeholder="Email Address">
+        <input type="password" id="auth-pass" placeholder="Password">
       </div>
       
-      <button id="btn-login" class="menu-btn primary">LOG MASUK</button>
-      <button id="btn-register" class="menu-btn secondary">DAFTAR AKAUN</button>
+      <button id="btn-login" class="menu-btn primary">LOG IN</button>
+      <button id="btn-register" class="menu-btn secondary">CREATE ACCOUNT</button>
       
-      <div class="or-separator">— ATAU —</div>
-      <button id="btn-guest" class="menu-btn guest-btn">MAIN SEBAGAI TETAMU (TANPA LOGIN)</button>
+      <div class="or-separator">— OR —</div>
+      <button id="btn-guest" class="menu-btn guest-btn">PLAY AS GUEST (NO LOGIN)</button>
       
       <div id="auth-error" class="error-text"></div>
     </div>
   </div>
 
-  <!-- VIEW LAYER 2: UTAMA DASHBOARD -->
+  <!-- VIEW LAYER 2: DASHBOARD MAIN MENU -->
   <div id="screen-dashboard" class="view-layer hidden">
     <div class="dashboard-header">
       <div>
-        <span style="color:#6c7285; font-size:0.85rem;">Status Profil:</span>
-        <h2 id="user-display-tag" style="margin:2px 0 0 0;">Pengguna</h2>
+        <span style="color:#6c7285; font-size:0.85rem;">Profile Status:</span>
+        <h2 id="user-display-tag" style="margin:2px 0 0 0;">User</h2>
       </div>
-      <button id="btn-logout" class="logout-minimal">LOG KELUAR</button>
+      <button id="btn-logout" class="logout-minimal">LOG OUT</button>
     </div>
 
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="card-label">Jumlah Mata Ganjaran</div>
+        <div class="card-label">Total Reward Points</div>
         <div id="dash-xp" class="card-value value-xp">0 XP</div>
       </div>
       <div class="stat-card">
-        <div class="card-label">Rentak Senaman</div>
-        <div id="dash-streak" class="card-value value-streak">0 HARI</div>
+        <div class="card-label">Workout Streak</div>
+        <div id="dash-streak" class="card-value value-streak">0 DAYS</div>
       </div>
     </div>
 
-    <!-- Ringkasan Statistik Aktiviti Fizikal Sebenar -->
+    <!-- Recent Physical Activity Statistics Summary -->
     <div id="analytics-box" class="analytics-preview" style="display: none;">
-      <h3>📊 PRESTASI PERTEMPURAN TERKINI</h3>
+      <h3>📊 RECENT BATTLE PERFORMANCE</h3>
       <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.9rem;">
         <div>Status: <b id="summary-outcome">-</b></div>
-        <div>Tenaga Dibakar: <b id="summary-calories">0 kcal</b></div>
-        <div>Masa: <b id="summary-time">0 min</b></div>
+        <div>Calories Burned: <b id="summary-calories">0 kcal</b></div>
+        <div>Duration: <b id="summary-time">0 min</b></div>
       </div>
     </div>
 
     <div style="margin-top: auto; width: 100%; max-width: 500px; text-align: center; padding-bottom: 20px;">
-      <button id="btn-start-flow" class="cta-pulse-btn">MULA PERMAINAN FIZIKAL</button>
+      <button id="btn-start-flow" class="cta-pulse-btn">START PHYSICAL GAME</button>
     </div>
   </div>
 
-  <!-- VIEW LAYER 3: KALIBRASI PERKAKASAN AKSELEROMETER -->
+  <!-- VIEW LAYER 3: HARDWARE SENSOR CALIBRATION -->
   <div id="screen-calibration" class="view-layer hidden">
     <div class="calibration-box">
       <div style="font-size: 3rem; margin-bottom: 10px;">📱</div>
-      <h2>Ujian Sensor Telefon</h2>
+      <h2>Phone Sensor Test</h2>
       <p style="color:#8f94a6; font-size:0.85rem; line-height:1.4;">
-        Goyangkan atau gerakkan telefon anda sedikit untuk mengaktifkan sambungan input perkakasan.
+        Shake or move your phone slightly to initialize the hardware input connection.
       </p>
 
       <div class="sensor-indicator">
-        <div id="cal-x">Sumbu X: <span class="bad">Menunggu perkakasan...</span></div>
-        <div id="cal-y">Sumbu Y: <span class="bad">Menunggu perkakasan...</span></div>
-        <div id="cal-z">Sumbu Z: <span class="bad">Menunggu perkakasan...</span></div>
+        <div id="cal-x">X-Axis: <span class="bad">Waiting for hardware...</span></div>
+        <div id="cal-y">Y-Axis: <span class="bad">Waiting for hardware...</span></div>
+        <div id="cal-z">Z-Axis: <span class="bad">Waiting for hardware...</span></div>
       </div>
 
       <p id="cal-status-text" style="font-size:0.85rem; color:#00e5ff; font-weight:bold; margin-bottom:20px;">
-        🔄 Mengesan tindak balas Sensor Gerakan...
+        🔄 Detecting Motion Sensor response...
       </p>
 
       <p id="safari-permission-notice" style="display:none; color:#ffb300; font-size:0.8rem; margin-bottom:15px;">
-        *Sila klik butang di bawah jika peranti meminta kebenaran keselamatan sistem.*
+        *Please click the button below if the device requests system security permissions.*
       </p>
 
-      <button id="btn-ignite-game" class="menu-btn primary">MASUK GAME</button>
-      <button id="btn-abort-cal" class="menu-btn secondary">KEMBALI</button>
+      <button id="btn-ignite-game" class="menu-btn primary">ENTER GAME</button>
+      <button id="btn-abort-cal" class="menu-btn secondary">GO BACK</button>
     </div>
   </div>
 
-  <!-- VIEW LAYER 4: KAWASAN GAMEPLAY CORE -->
+  <!-- VIEW LAYER 4: CORE GAMEPLAY CONTAINER -->
   <div id="game-container" class="hidden">
-    <!-- UI Visual Layers Hud Display -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- UI Visual Layers HUD Display -->
     <div id="ui-layer">
       <div class="top-bar">
         <div class="hp-housing">
-          <div class="hp-label">Tenaga Wira (Hero HP)</div>
+          <div class="hp-label">Hero HP</div>
           <div class="hp-track"><div id="p-fill" class="hp-fill" style="width:100%; background:#00e676;"></div></div>
         </div>
         <div id="level-badge">Slime King Boss</div>
         <div class="hp-housing" style="text-align: right;">
-          <div class="hp-label">Nyawa Musuh (Boss HP)</div>
+          <div class="hp-label">Boss HP</div>
           <div class="hp-track"><div id="e-fill" class="hp-fill" style="width:100%;"></div></div>
         </div>
       </div>
 
       <div class="control-deck">
-        <div id="status-msg">Sila mulakan aktiviti kecergasan!</div>
-        <div class="exercise-metrics" id="motion-display">Goyangan Dikesan: 0 | Status: Sedia</div>
+        <div id="status-msg">Please begin physical activity!</div>
+        <div class="exercise-metrics" id="motion-display">Shakes Detected: 0 | Status: Ready</div>
         <button id="btn-force-end" style="margin-top:10px; background:#ff5252; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
-           Tamatkan Sesi (Simulasi Habis)
+           End Session (Simulate Finish)
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Skrip rujukan luaran dimasukkan secara berperingkat -->
+  <!-- Scripts -->
   <script src="game.js"></script>
   <script src="app.js"></script>
 </body>
