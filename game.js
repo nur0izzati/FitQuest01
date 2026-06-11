@@ -28,7 +28,11 @@ let runtime = {
   sugarGlobs: [],
   sugarPuddles: [],
   lastSugarFired: 0,
-  selectedSprite: 'assets/hero-sprite.png'
+  selectedSprite: 'assets/hero-sprite.png',
+  
+  // DATA PEMASA BARU
+  startTime: 0,
+  elapsedTime: 0
 };
 
 const UI = {
@@ -47,8 +51,15 @@ const UI = {
   motionInfo: document.getElementById('motion-display'),
   padBoundary: document.getElementById('joy-boundary'),
   padStick: document.getElementById('joy-stick'),
-  menuLevelDisplay: document.getElementById('menu-level-display')
+  menuLevelDisplay: document.getElementById('menu-level-display'),
+  
+  // ELEMEN UI TIMERS BARU
+  timerBadge: document.getElementById('timer-badge'),
+  highScoreDisplay: document.getElementById('high-score-display')
 };
+
+// Panggil fungsi paparan rekod sebaik sahaja skrip dimuatkan
+displayCurrentLevelHighScore();
 
 function changeMenuLevel(direction) {
   let targetLevel = runtime.currentLevel + direction;
@@ -56,6 +67,26 @@ function changeMenuLevel(direction) {
     runtime.currentLevel = targetLevel;
     UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
     UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+    displayCurrentLevelHighScore(); // Kemaskini paparan high score level baru
+  }
+}
+
+// BANTUAN: Format mili-saat kepada tulisan minit:saat.milisaat (00:00.00)
+function formatTime(ms) {
+  let minutes = Math.floor(ms / 60000);
+  let seconds = Math.floor((ms % 60000) / 1000);
+  let centiseconds = Math.floor((ms % 1000) / 10);
+  
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+}
+
+// BANTUAN: Baca dan tunjuk high score lokal dari browser
+function displayCurrentLevelHighScore() {
+  let savedScore = localStorage.getItem(`fitquest_lvl_${runtime.currentLevel}`);
+  if (savedScore) {
+    UI.highScoreDisplay.textContent = `🥇 Best Time: ${formatTime(parseInt(savedScore))}`;
+  } else {
+    UI.highScoreDisplay.textContent = `🥇 Best Time: --:--.--`;
   }
 }
 
@@ -92,6 +123,11 @@ function setupEnvironment() {
   runtime.pX = window.innerWidth * 0.15;
   runtime.pY = window.innerHeight / 2 - 50;
   
+  // REKOD MASA BERMULA DI SINI
+  runtime.startTime = performance.now();
+  runtime.elapsedTime = 0;
+  UI.timerBadge.textContent = "⏱️ 00:00.00";
+
   clearAllSugarHazards();
   resetBossForLevel();
 
@@ -222,6 +258,10 @@ function evaluateDeviceSensors(event) {
 
 function engineFrameTick(timestamp) {
   if (runtime.halted) return;
+
+  // Kira masa berlalu (elapsed time)
+  runtime.elapsedTime = timestamp - runtime.startTime;
+  UI.timerBadge.textContent = `⏱️ ${formatTime(runtime.elapsedTime)}`;
 
   runtime.currentSpeed *= SETTINGS.frictionFactor;
 
@@ -424,17 +464,33 @@ function processCombatStrike() {
     UI.status.textContent = `💥 HIT! Boss Health: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
 
-    if (runtime.eHP <= 0) progressCampaignLevel();
+    if (runtime.eHP <= 0) processLevelVictory(); // Ditukar ke fungsi perantara untuk semak High Score
   } else {
     UI.status.textContent = "❌ Too far away! Jog closer to strike!";
   }
 }
 
-// FUNGSI DIKEMASKINI: Ditambah Paparan Fakta Kesihatan & Bahaya Diabetes Sepasukan Kalah
-function progressCampaignLevel() {
+// FUNGSI BARU: Semak dan simpan rekod masa tersingkat dalam Storage telefon
+function checkAndSaveHighScore(level, completionTime) {
+  let recordKey = `fitquest_lvl_${level}`;
+  let existingRecord = localStorage.getItem(recordKey);
+  
+  if (!existingRecord || completionTime < parseInt(existingRecord)) {
+    localStorage.setItem(recordKey, completionTime.toString());
+    return true; // Bermaksud rekod baru tercipta!
+  }
+  return false;
+}
+
+// FUNGSI BARU: Menguruskan kemenangan dan pembekuan masa
+function processLevelVictory() {
   runtime.halted = true;
   clearAllSugarHazards();
   window.removeEventListener('devicemotion', evaluateDeviceSensors);
+
+  // Semak sama ada masa akhir ini adalah rekod baru atau tidak
+  let isNewRecord = checkAndSaveHighScore(runtime.currentLevel, runtime.elapsedTime);
+  let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
   UI.overlay.querySelector('.how-to-play-box').style.display = 'none';
   UI.overlay.querySelector('.setup-box').style.display = 'none';
@@ -442,7 +498,6 @@ function progressCampaignLevel() {
   UI.overlay.querySelectorAll('p').forEach(p => p.remove());
   UI.overlay.querySelectorAll('.health-fact-box').forEach(b => b.remove());
 
-  // Cipta satu kotak khas untuk mesej kesedaran kesihatan (Health Fact Box)
   let factBox = document.createElement('div');
   factBox.className = 'health-fact-box';
   factBox.style.background = 'rgba(0, 229, 255, 0.08)';
@@ -455,9 +510,9 @@ function progressCampaignLevel() {
 
   let factTitle = document.createElement('h4');
   factTitle.style.margin = '0 0 8px 0';
-  factTitle.style.color = '#00e5ff';
+  factTitle.style.color = isNewRecord ? '#ffd700' : '#00e5ff'; // Tukar warna emas kalau pecah rekod
   factTitle.style.fontSize = '1rem';
-  factTitle.textContent = '🩺 HEALTH FACT REPORT';
+  factTitle.textContent = isNewRecord ? '🥇 NEW BEST RECORD TIME!' : '🩺 HEALTH FACT REPORT';
 
   let factContent = document.createElement('p');
   factContent.style.color = '#e5e7eb';
@@ -468,9 +523,12 @@ function progressCampaignLevel() {
   factBox.appendChild(factTitle);
   factBox.appendChild(factContent);
 
+  // Tulis info masa tamat di atas laporan kesihatan
+  let timeNote = `<b style="color: #00ff66;">Your Clear Time: ${finalTimeFormatted}</b><br><br>`;
+
   if (runtime.currentLevel === 1) {
     UI.title.textContent = "🎉 LEVEL 1 CLEARED!";
-    factContent.innerHTML = "<b>Empty Calories:</b> Sugar provides instant energy but has 0 nutritional value. By actively jogging just now, you successfully burned off those empty calories before they turned into stored body fat!";
+    factContent.innerHTML = timeNote + "<b>Empty Calories:</b> Sugar provides instant energy but has 0 nutritional value. By actively jogging just now, you successfully burned off those empty calories before they turned into stored body fat!";
     
     runtime.currentLevel = 2;
     UI.btn.textContent = "PROCEED TO LEVEL 2";
@@ -478,7 +536,7 @@ function progressCampaignLevel() {
   } 
   else if (runtime.currentLevel === 2) {
     UI.title.textContent = "🎉 LEVEL 2 CLEARED!";
-    factContent.innerHTML = "<b>Insulin Resistance & Weight Gain:</b> Constant high sugar spikes force your pancreas to overproduce insulin. Over time, your cells become numb to it (insulin resistance), leading to fat storage, high blood pressure, and obesity!";
+    factContent.innerHTML = timeNote + "<b>Insulin Resistance & Weight Gain:</b> Constant high sugar spikes force your pancreas to overproduce insulin. Over time, your cells become numb to it (insulin resistance), leading to fat storage, high blood pressure, and obesity!";
     
     runtime.currentLevel = 3;
     UI.btn.textContent = "PROCEED TO LEVEL 3";
@@ -486,7 +544,7 @@ function progressCampaignLevel() {
   } 
   else if (runtime.currentLevel === 3) {
     UI.title.textContent = "🏆 VICTORY OVER DIABETES!";
-    factContent.innerHTML = "<b>Chronic Diabetes Risk:</b> When insulin fails completely, sugar builds up in your blood, causing <b>Type 2 Diabetes</b>. This can lead to blindness, kidney failure, and nerve damage. Congratulations! Your active steps today prove that exercise is the ultimate shield against chronic health diseases!";
+    factContent.innerHTML = timeNote + "<b>Chronic Diabetes Risk:</b> When insulin fails completely, sugar builds up in your blood, causing <b>Type 2 Diabetes</b>. This can lead to blindness, kidney failure, and nerve damage. Congratulations! Your active steps today prove that exercise is the ultimate shield against chronic health diseases!";
     
     runtime.currentLevel = 1;
     UI.btn.textContent = "PLAY AGAIN";
@@ -494,7 +552,8 @@ function progressCampaignLevel() {
   }
 
   UI.overlay.insertBefore(factBox, UI.btn);
-  
+  displayCurrentLevelHighScore(); // Segarkan nilai paparan menu emas semula
+
   setTimeout(() => {
     UI.overlay.style.display = 'flex';
   }, 600);
