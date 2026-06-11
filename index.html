@@ -19,6 +19,7 @@
         <span id="menu-level-display">LEVEL 1</span>
         <button class="arrow-btn" id="next-lvl-btn" onclick="changeMenuLevel(1)">➡️</button>
       </div>
+      <div id="high-score-display">🥇 Best Time: --:--.--</div>
     </div>
 
     <div class="setup-box">
@@ -71,7 +72,12 @@
         <div class="hp-label">Hero Energy</div>
         <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
       </div>
-      <div id="level-badge">LEVEL 1</div>
+      
+      <div class="center-ui-badges">
+        <div id="level-badge">LEVEL 1</div>
+        <div id="timer-badge">⏱️ 00:00.00</div>
+      </div>
+
       <div class="hp-housing" style="text-align: right;">
         <div class="hp-label">Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
