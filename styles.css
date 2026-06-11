@@ -40,11 +40,16 @@ body {
   background: rgba(15, 11, 11, 0.98);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* Tukar dari center ke flex-start supaya susunan bermula dari atas */
   align-items: center;
   z-index: 100;
-  padding: 20px;
+  padding: 40px 20px; /* Tambah padding atas bawah untuk ruang skrol */
   text-align: center;
+  
+  /* PENTING: Untuk fungsi skrol */
+  overflow-y: auto;
+  touch-action: pan-y; /* Benarkan skrol atas bawah sahaja, tak ganggu game */
+  -webkit-overflow-scrolling: touch; /* Biar skrol rasa lancar pada iOS/Safari */
 }
 
 .setup-box {
