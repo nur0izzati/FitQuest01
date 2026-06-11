@@ -81,6 +81,19 @@ body {
   transform: scale(0.9);
 }
 
+/* GAYA HIGH SCORE EMAS BARU */
+#high-score-display {
+  font-size: 0.85rem;
+  color: #ffd700;
+  margin-top: 8px;
+  font-weight: bold;
+  background: rgba(255, 215, 0, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px dashed rgba(255, 215, 0, 0.3);
+  display: inline-block;
+}
+
 .setup-box {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -152,7 +165,6 @@ body {
   text-align: center;
 }
 
-/* KOTAK SASARAN VISUAL MISI (BARU) */
 #target-boss-preview {
   display: flex;
   align-items: center;
@@ -161,7 +173,7 @@ body {
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 15px;
-  box-shadow: 0 0 15px rgba(255, 51, 102, 0.05);
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.05);
   animation: boxPulseGlow 2s infinite alternate ease-in-out;
 }
 
@@ -323,13 +335,22 @@ body {
   z-index: 10;
 }
 
-.top-bar { display: flex; justify-content: space-between; width: 100%; }
-.hp-housing { width: 38%; }
+.top-bar { display: flex; justify-content: space-between; width: 100%; align-items: flex-start; }
+.hp-housing { width: 32%; }
 .hp-label { font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; color: #8f94a6; font-weight: bold; }
 .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
 .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
 #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
 #e-fill { background: linear-gradient(90deg, #ff3366, #ff99bb); }
+
+/* PENYUSUNAN BADGE TENGAH ATAS BARU */
+.center-ui-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 32%;
+}
 
 #level-badge {
   background: #1f222e;
@@ -339,6 +360,19 @@ body {
   font-size: 0.8rem;
   font-weight: bold;
   color: var(--powerup);
+  text-align: center;
+}
+
+#timer-badge {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: bold;
+  color: #00e5ff;
+  text-align: center;
 }
 
 .control-deck {
