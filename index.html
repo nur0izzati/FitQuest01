@@ -2,17 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Slime King Campaign</title>
+  <title>FitQuest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d0e12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
     :root {
       --primary: #00ff66;
       --danger: #ff3333;
       --powerup: #ffea00;
-      --slime-green: #39ff14;
+      --sugar-white: #ffffff;
       --bg: #0d0e12;
-      --panel: rgba(22, 24, 33, 0.9);
+      --panel: rgba(22, 24, 33, 0.95);
     }
 
     * {
@@ -35,11 +40,8 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at center, #1b2618 0%, #080d09 100%);
+      background: radial-gradient(circle at center, #261818 0%, #0d0808 100%);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
 
     #overlay {
@@ -48,35 +50,111 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(11, 15, 12, 0.98);
+      background: rgba(15, 11, 11, 0.98);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 100;
-      padding: 30px;
+      padding: 20px;
       text-align: center;
+    }
+
+    .setup-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .setup-box h3 {
+      margin: 0 0 8px 0;
+      color: #00e5ff;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .char-toggle-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .char-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .char-btn.active {
+      background: rgba(0, 255, 102, 0.15);
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
     }
 
     .safety-warning-box {
       background: rgba(255, 51, 51, 0.1);
       border: 2px dashed var(--danger);
       border-radius: 12px;
+      padding: 12px;
+      margin: 15px 0;
+      max-width: 340px;
+    }
+
+    .how-to-play-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
       padding: 15px;
-      margin: 20px 0;
-      max-width: 320px;
+      margin-bottom: 20px;
+      max-width: 340px;
+      text-align: left;
+    }
+
+    .how-to-play-box h3 {
+      margin: 0 0 8px 0;
+      color: #00e5ff;
+      font-size: 1rem;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .how-to-play-box ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #d1d5db;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .how-to-play-box li {
+      margin-bottom: 8px;
     }
 
     .cta-btn {
-      background: linear-gradient(135deg, var(--slime-green) 0%, #00b347 100%);
+      background: linear-gradient(135deg, #ff3366 0%, #b3002d 100%);
       border: none;
-      color: #000;
+      color: #fff;
       padding: 16px 45px;
       font-size: 1.2rem;
       font-weight: bold;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(57, 255, 20, 0.4);
+      box-shadow: 0 6px 20px rgba(255, 51, 102, 0.4);
+      width: 100%;
+      max-width: 340px;
     }
 
     #player {
@@ -92,53 +170,56 @@
       image-rendering: crisp-edges;
       z-index: 6;
       transition: filter 0.2s;
-      background-color: transparent;
     }
 
     #enemy {
       position: absolute;
       width: 120px;
       height: 120px;
-      background-image: url('assets/slime.png');
+      background-image: url('assets/sugar-cube.png');
       background-repeat: no-repeat;
       background-size: contain;
-      background-position: bottom center; 
+      background-position: bottom center;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       z-index: 5;
-      transform-origin: bottom center;     
+      transform-origin: bottom center;
       transition: width 0.3s, height 0.3s;
-      animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
+      animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
     }
 
-    .slime-glob {
+    .sugar-glob {
       position: absolute;
-      width: 28px;
-      height: 28px;
-      background: radial-gradient(circle, #ccff00 20%, #22aa00 80%, transparent 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 15px var(--slime-green);
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
+      border-radius: 4px;
+      box-shadow: 0 0 15px var(--sugar-white);
       z-index: 7;
     }
 
-    .slime-puddle {
+    .sugar-puddle {
       position: absolute;
       width: 60px;
       height: 25px;
-      background: rgba(57, 255, 20, 0.5);
+      background: rgba(255, 182, 193, 0.5);
       border-radius: 50%;
-      box-shadow: 0 0 12px #22aa00;
+      box-shadow: 0 0 12px #ff6680;
       z-index: 4;
       animation: meltIn 0.3s ease-out;
     }
 
     #powerup-item {
       position: absolute;
-      width: 40px;
-      height: 40px;
-      background: radial-gradient(circle, var(--powerup) 0%, #ff8800 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 20px var(--powerup);
+      width: 50px; 
+      height: 50px; 
+      background-image: url('assets/apple.png');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: drop-shadow(0 0 8px var(--powerup));
       display: none;
       z-index: 4;
     }
@@ -152,18 +233,23 @@
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
     @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    @keyframes slimeIdleAnimation {
+    @keyframes enemyIdleAnimation {
       0% { transform: scaleX(1) scaleY(1) translateY(0); }
-      45% { transform: scaleX(0.93) scaleY(1.07) translateY(-4px); }
-      90% { transform: scaleX(1.18) scaleY(0.82) translateY(0); }
-      100% { transform: scaleX(1.2) scaleY(0.8) translateY(0); }
+      50% { transform: scaleX(1.05) scaleY(0.95) translateY(2px); }
+      100% { transform: scaleX(0.95) scaleY(1.05) translateY(-2px); }
     }
 
-    /* --- FIXED HUD LAYOUT FOR MOBILE SCREENS --- */
-    #ui-top-layer {
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      padding: 20px 20px 0 20px;
+      height: 100%;
       pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 25px;
       z-index: 10;
     }
 
@@ -173,7 +259,7 @@
     .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
     .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
     #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
-    #e-fill { background: linear-gradient(90deg, var(--slime-green), #aa00ff); }
+    #e-fill { background: linear-gradient(90deg, #ff3366, #ff99bb); }
 
     #level-badge {
       background: #1f222e;
@@ -183,46 +269,6 @@
       font-size: 0.8rem;
       font-weight: bold;
       color: var(--powerup);
-      align-self: flex-start;
-    }
-
-    /* Bottom HUD cluster container */
-    #ui-bottom-layer {
-      width: 100%;
-      padding: 0 20px 15px 20px; /* Added breathing room for physical bottom navigation bars */
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    /* Joystick wrapper now aligns dynamically without absolute overlaps */
-    .joystick-zone {
-      display: flex;
-      justify-content: flex-start;
-      width: 100%;
-    }
-
-    #joy-boundary {
-      width: 110px;
-      height: 110px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      pointer-events: auto; /* Keeps joystick responsive */
-    }
-
-    #joy-stick {
-      width: 44px;
-      height: 44px;
-      background: rgba(255, 255, 255, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      border-radius: 50%;
-      pointer-events: none;
     }
 
     .control-deck {
@@ -230,20 +276,86 @@
       background: var(--panel);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 20px;
-      padding: 12px;
+      padding: 15px;
       text-align: center;
       backdrop-filter: blur(12px);
-      pointer-events: auto;
+      margin-bottom: 35px; 
     }
 
-    #status-msg { font-size: 0.95rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; min-height: 22px; }
-    .exercise-metrics { font-size: 0.75rem; color: #6c7285; text-transform: uppercase; }
+    #status-msg { font-size: 1.05rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; height: 24px; }
+    .exercise-metrics { font-size: 0.8rem; color: #6c7285; text-transform: uppercase; }
+
+    #joy-boundary {
+      position: absolute;
+      bottom: 175px; 
+      left: 35px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    #joy-stick {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
 <div id="game-container">
-  <div id="ui-top-layer">
+  <div id="overlay">
+    <h1 id="menu-title">FITQUEST</h1>
+    
+    <div class="setup-box">
+      <h3>Select Character</h3>
+      <div class="char-toggle-container">
+        <button class="char-btn active" id="btn-female" onclick="selectGender('female')">Female</button>
+        <button class="char-btn" id="btn-male" onclick="selectGender('male')">Male</button>
+      </div>
+    </div>
+    
+    <div class="how-to-play-box">
+      <h3>🏃‍♂️ How To Play</h3>
+      <ul>
+        <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick on the screen to aim your character in a direction. <i>(Note: Joystick alone will not move you!)</i></li>
+        <li><b>Step 2 (Move):</b> While holding the joystick, physically **walk or jog on the spot** to make your character run forward.</li>
+        <li><b>Step 3 (Attack):</b> Get close to the Boss and firmly **shake your phone** to strike!</li>
+      </ul>
+    </div>
+
+    <div class="safety-warning-box" id="safety-box">
+      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ Safety Warning:</b>
+      <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
+        Please make sure your real-world surroundings are entirely clear. <b>DO NOT</b> play near roads, steps, or tight spaces that could cause you to trip or fall!
+      </p>
+    </div>
+
+    <button class="cta-btn" id="install-pwa-btn" style="display: none; background: linear-gradient(135deg, #00e5ff 0%, #008699 100%); margin-bottom: 12px; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3);">
+      📥 DOWNLOAD APP
+    </button>
+
+    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START GAME</button>
+  </div>
+
+  <div id="player"></div>
+  <div id="enemy"></div>
+  <div id="powerup-item" class="float-item"></div>
+
+  <div id="joy-boundary">
+    <div id="joy-stick"></div>
+  </div>
+
+  <div id="ui-layer">
     <div class="top-bar">
       <div class="hp-housing">
         <div class="hp-label">Hero Energy</div>
@@ -251,47 +363,52 @@
       </div>
       <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Slime King Health</div>
+        <div class="hp-label">Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="overlay">
-    <h1 id="menu-title">FITQUEST: SLIME KING</h1>
-    
-    <div class="safety-warning-box" id="safety-box">
-      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ SAFETY WARNING:</b>
-      <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
-        Please make sure your surroundings are completely clear. <b>DO NOT</b> play near open drains, roads, or tight spaces that could cause a tripping hazard!
-      </p>
-    </div>
-
-    <p id="menu-desc" style="color: #7e8494; margin-bottom: 25px; max-width: 290px; font-size: 0.9rem;">
-      Use the joystick to choose your direction. Jog or run in place to move your pixel character forward!
-    </p>
-    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START CAMPAIGN</button>
-  </div>
-
-  <div id="player"></div>
-  <div id="enemy"></div>
-  <div id="powerup-item" class="float-item"></div>
-
-  <div id="ui-bottom-layer">
-    <div class="joystick-zone">
-      <div id="joy-boundary">
-        <div id="joy-stick"></div>
       </div>
     </div>
 
     <div class="control-deck">
       <div id="status-msg">Ready for action...</div>
-      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Stationary</div>
+      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
     </div>
   </div>
 </div>
 
 <script>
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker Active:', reg.scope))
+        .catch(err => console.log('Service Worker Crashed:', err));
+    });
+  }
+
+  // PWA Direct Installation Banner Logic
+  let deferredPrompt;
+  const installBtn = document.getElementById('install-pwa-btn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+
+    installBtn.addEventListener('click', () => {
+      installBtn.style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choice) => {
+        if (choice.outcome === 'accepted') console.log('User installed game shell.');
+        deferredPrompt = null;
+      });
+    });
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+
+  // GAME ENGINE SPECIFIC VALUES
   const SETTINGS = {
     moveCutoff: 11.8,
     shakeCutoff: 23.5,
@@ -300,11 +417,11 @@
     frictionFactor: 0.88,
     accelerationGain: 0.7,
     velocityCap: 6.5,
-    padRadius: 55, // Adjusted slightly to match scaled container bounding geometry
+    padRadius: 60,
     animationSpeed: 110,
-    slimeGlobVelocity: 4,
-    slimeAttackFrequency: 2200,
-    stickySlowFactor: 0.35 
+    sugarGlobVelocity: 4,
+    sugarAttackFrequency: 2200,
+    stickySlowFactor: 0.35
   };
 
   let runtime = {
@@ -318,10 +435,11 @@
     hasPowerUpBoost: false,
     powerX: 0, powerY: 0,
     powerSpawned: false,
-    isStuckInSlime: false,
-    slimeGlobs: [],
-    slimePuddles: [],
-    lastSlimeFired: 0
+    isStuckInSyrup: false,
+    sugarGlobs: [],
+    sugarPuddles: [],
+    lastSugarFired: 0,
+    selectedSprite: 'assets/hero-sprite.png'
   };
 
   const UI = {
@@ -329,7 +447,6 @@
     overlay: document.getElementById('overlay'),
     title: document.getElementById('menu-title'),
     safety: document.getElementById('safety-box'),
-    desc: document.getElementById('menu-desc'),
     btn: document.getElementById('action-btn'),
     badge: document.getElementById('level-badge'),
     player: document.getElementById('player'),
@@ -343,7 +460,24 @@
     padStick: document.getElementById('joy-stick')
   };
 
+  function selectGender(gender) {
+    const femaleBtn = document.getElementById('btn-female');
+    const maleBtn = document.getElementById('btn-male');
+    
+    if (gender === 'female') {
+      femaleBtn.classList.add('active');
+      maleBtn.classList.remove('active');
+      runtime.selectedSprite = 'assets/hero-sprite.png';
+    } else {
+      maleBtn.classList.add('active');
+      femaleBtn.classList.remove('active');
+      runtime.selectedSprite = 'assets/hero-sprite2.png';
+    }
+  }
+
   function igniteEngine() {
+    UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
+
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
     } else {
@@ -354,13 +488,12 @@
   function setupEnvironment() {
     UI.overlay.style.display = 'none';
     runtime.halted = false;
-    
     runtime.pHP = 100;
     UI.pFill.style.width = '100%';
     runtime.pX = window.innerWidth * 0.15;
-    runtime.pY = window.innerHeight * 0.35; // Position player comfortably clear of HUD decks
+    runtime.pY = window.innerHeight / 2 - 50;
     
-    clearAllSlimeHazards();
+    clearAllSugarHazards();
     resetBossForLevel();
 
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
@@ -377,14 +510,14 @@
 
   function resetBossForLevel() {
     runtime.eX = window.innerWidth * 0.75;
-    runtime.eY = window.innerHeight * 0.35;
+    runtime.eY = window.innerHeight / 2 - 60;
     runtime.eHP = 100;
     runtime.hasPowerUpBoost = false;
-    runtime.isStuckInSlime = false;
+    runtime.isStuckInSyrup = false;
     UI.eFill.style.width = '100%';
     UI.player.style.filter = 'none';
 
-    updateSlimeBossScale();
+    updateSugarBossScale();
 
     if (runtime.currentLevel >= 2) {
       spawnPowerUpRandomly();
@@ -395,14 +528,14 @@
     refreshViewportLayouts();
   }
 
-  function clearAllSlimeHazards() {
-    runtime.slimeGlobs.forEach(g => g.element.remove());
-    runtime.slimePuddles.forEach(p => p.element.remove());
-    runtime.slimeGlobs = [];
-    runtime.slimePuddles = [];
+  function clearAllSugarHazards() {
+    runtime.sugarGlobs.forEach(g => g.element.remove());
+    runtime.sugarPuddles.forEach(p => p.element.remove());
+    runtime.sugarGlobs = [];
+    runtime.sugarPuddles = [];
   }
 
-  function updateSlimeBossScale() {
+  function updateSugarBossScale() {
     let dynamicBaseSize = 120 * (0.5 + (runtime.eHP / 200)); 
     UI.enemy.style.width = `${dynamicBaseSize}px`;
     UI.enemy.style.height = `${dynamicBaseSize}px`;
@@ -415,14 +548,14 @@
     const horizontalMargin = window.innerWidth * 0.2;
     const verticalMargin = window.innerHeight * 0.2;
     
-    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 40);
-    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight * 0.4);
+    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
 
     UI.power.style.left = `${runtime.powerX}px`;
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "⚡ Anti-Slime Crystal spawned! Grab it quickly to shatter the shield!";
+    UI.status.textContent = "🍏 Apple Spawned! Grab it quick to break the shield!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -478,13 +611,11 @@
 
     if (totalMagnitude > SETTINGS.moveCutoff) {
       let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
-      
-      if (runtime.isStuckInSlime) {
+      if (runtime.isStuckInSyrup) {
         workYield *= SETTINGS.stickySlowFactor;
       }
-
       runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-      UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSlime ? 'STUCK (Run Faster!)' : 'Moving'}`;
+      UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP (Run Faster!)' : 'Moving'}`;
     }
 
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
@@ -508,28 +639,26 @@
     runtime.pX += runtime.steerX * runtime.currentSpeed;
     runtime.pY += runtime.steerY * runtime.currentSpeed;
 
-    // Bounds updated dynamically to account for bottom HUD height restrictions on mobile viewports
-    let bottomLimit = window.innerHeight - (document.getElementById('ui-bottom-layer').offsetHeight + 100);
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
-    runtime.pY = Math.max(0, Math.min(bottomLimit, runtime.pY));
+    runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
 
-    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
-      runtime.lastSlimeFired = timestamp;
-      spitSlimeGlob();
+    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSugarFired > SETTINGS.sugarAttackFrequency) {
+      runtime.lastSugarFired = timestamp;
+      spitSugarGlob();
     }
     
-    processSlimeHazards();
+    processSugarHazards();
 
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
-      let dx = (runtime.pX + 50) - (runtime.powerX + 20);
-      let dy = (runtime.pY + 50) - (runtime.powerY + 20);
+      let dx = (runtime.pX + 50) - (runtime.powerX + 25);
+      let dy = (runtime.pY + 50) - (runtime.powerY + 25);
       let pDist = Math.sqrt(dx*dx + dy*dy);
       
-      if (pDist < 55) {
+      if (pDist < 60) {
         runtime.hasPowerUpBoost = true;
         UI.power.style.display = 'none';
         UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
-        UI.status.textContent = `⚡ EMPOWERED! Slime Shield broken, attack now!`;
+        UI.status.textContent = `🍏 VITAMIN POWERUP! Shield broken, strike now!`;
         UI.status.style.color = 'var(--powerup)';
       }
     }
@@ -538,9 +667,9 @@
     requestAnimationFrame(engineFrameTick);
   }
 
-  function spitSlimeGlob() {
+  function spitSugarGlob() {
     let glob = document.createElement('div');
-    glob.className = 'slime-glob';
+    glob.className = 'sugar-glob';
     glob.style.left = `${runtime.eX + 40}px`;
     glob.style.top = `${runtime.eY + 40}px`;
     UI.container.appendChild(glob);
@@ -548,10 +677,9 @@
     let targetX = runtime.pX + 50;
     let targetY = runtime.pY + 50;
     let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
+    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
-    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.slimeGlobVelocity + 2.5 : SETTINGS.slimeGlobVelocity;
-
-    runtime.slimeGlobs.push({
+    runtime.sugarGlobs.push({
       element: glob,
       x: runtime.eX + 40,
       y: runtime.eY + 40,
@@ -560,20 +688,18 @@
     });
   }
 
-  function processSlimeHazards() {
-    let bottomLimit = window.innerHeight - document.getElementById('ui-bottom-layer').offsetHeight;
-
-    for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
-      let g = runtime.slimeGlobs[i];
+  function processSugarHazards() {
+    for (let i = runtime.sugarGlobs.length - 1; i >= 0; i--) {
+      let g = runtime.sugarGlobs[i];
       g.x += g.vX;
       g.y += g.vY;
       g.element.style.left = `${g.x}px`;
       g.element.style.top = `${g.y}px`;
 
-      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > bottomLimit) {
-        if (g.y <= bottomLimit) createSlimePuddle(g.x, g.y);
+      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
+        createSugarPuddle(g.x, g.y);
         g.element.remove();
-        runtime.slimeGlobs.splice(i, 1);
+        runtime.sugarGlobs.splice(i, 1);
         continue;
       }
 
@@ -583,13 +709,12 @@
 
       if (range < 45) { 
         g.element.remove();
-        runtime.slimeGlobs.splice(i, 1);
-        
+        runtime.sugarGlobs.splice(i, 1);
         runtime.pHP = Math.max(runtime.pHP - 12, 0);
         UI.pFill.style.width = `${runtime.pHP}%`;
         UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
         
-        UI.status.textContent = `🤢 Sticky! Hit by Slime Glob! HP Reduced!`;
+        UI.status.textContent = `💥 Hit by flying obstacle!`;
         UI.status.style.color = "var(--danger)";
 
         if (runtime.pHP <= 0) triggerGameOverScreen();
@@ -597,9 +722,8 @@
     }
 
     let currentlyOnPuddle = false;
-    for (let j = runtime.slimePuddles.length - 1; j >= 0; j--) {
-      let p = runtime.slimePuddles[j];
-      
+    for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
+      let p = runtime.sugarPuddles[j];
       let dx = p.x - (runtime.pX + 50);
       let dy = p.y - (runtime.pY + 50);
       let trapDistance = Math.sqrt(dx*dx + dy*dy);
@@ -609,13 +733,13 @@
       }
     }
 
-    if (currentlyOnPuddle !== runtime.isStuckInSlime) {
-      runtime.isStuckInSlime = currentlyOnPuddle;
-      if (runtime.isStuckInSlime) {
+    if (currentlyOnPuddle !== runtime.isStuckInSyrup) {
+      runtime.isStuckInSyrup = currentlyOnPuddle;
+      if (runtime.isStuckInSyrup) {
         UI.player.style.filter = runtime.hasPowerUpBoost 
-          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.6) hue-rotate(60deg)'
-          : 'sepia(0.8) hue-rotate(60deg) brightness(0.8)';
-        UI.status.textContent = `⚠️ You are trapped in a Slime Puddle! Increase step rate!`;
+          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.5) hue-rotate(330deg)'
+          : 'sepia(0.6) hue-rotate(330deg) brightness(0.9)';
+        UI.status.textContent = `⚠️ Stuck in sticky syrup! Run faster to break free!`;
         UI.status.style.color = "#ffaa00";
       } else {
         UI.player.style.filter = runtime.hasPowerUpBoost 
@@ -625,30 +749,41 @@
     }
   }
 
-  function createSlimePuddle(rawX, rawY) {
-    let bottomLimit = window.innerHeight - (document.getElementById('ui-bottom-layer').offsetHeight + 35);
+  function createSugarPuddle(rawX, rawY) {
     let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
-    let targetY = Math.max(40, Math.min(bottomLimit, rawY));
+    let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
 
     let puddle = document.createElement('div');
-    puddle.className = 'slime-puddle';
+    puddle.className = 'sugar-puddle';
     puddle.style.left = `${targetX}px`;
     puddle.style.top = `${targetY}px`;
     UI.container.appendChild(puddle);
 
-    runtime.slimePuddles.push({ element: puddle, x: targetX, y: targetY });
+    runtime.sugarPuddles.push({ element: puddle, x: targetX, y: targetY });
 
-    if (runtime.slimePuddles.length > 6) {
-      let oldPuddle = runtime.slimePuddles.shift();
+    if (runtime.sugarPuddles.length > 6) {
+      let oldPuddle = runtime.sugarPuddles.shift();
       oldPuddle.element.remove();
     }
   }
 
   function triggerGameOverScreen() {
     runtime.halted = true;
-    clearAllSlimeHazards();
-    UI.title.textContent = "💥 CAMPAIGN FAILED!";
-    UI.desc.textContent = "Your Hero Energy was completely drained by the Slime King! Let's run again to try once more.";
+    clearAllSugarHazards();
+    UI.title.textContent = "💥 GAME FAILED!";
+    UI.status.textContent = "Defeated...";
+    UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; 
+    UI.overlay.querySelector('.setup-box').style.display = 'none'; 
+    UI.overlay.querySelector('.safety-warning-box').style.display = 'block';
+    UI.overlay.querySelector('p')?.remove(); 
+    
+    let retryDesc = document.createElement('p');
+    retryDesc.id = 'menu-desc';
+    retryDesc.style.color = '#7e8494';
+    retryDesc.style.marginBottom = '25px';
+    retryDesc.textContent = "Your energy was completely drained! Let's jog it out and try again.";
+    UI.overlay.insertBefore(retryDesc, UI.btn);
+
     UI.btn.textContent = "RETRY THIS LEVEL";
     UI.overlay.style.display = 'flex';
   }
@@ -661,7 +796,6 @@
 
     let xPercentage = runtime.currentFrameIndex * 50;  
     let yPercentage = runtime.currentDirectionRow * 33.333; 
-    
     UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
   }
   
@@ -676,52 +810,64 @@
     
     if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-        UI.status.textContent = "🛡️ Immune! Thick mucus protects the boss. Find a Crystal first!";
+        UI.status.textContent = "🛡️ Immune! Armor protects him. Collect an Apple first!";
         UI.status.style.color = "var(--danger)";
         return;
       }
 
       let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
-      
       UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
       runtime.eHP = Math.max(runtime.eHP - dmg, 0); 
       UI.eFill.style.width = `${runtime.eHP}%`;
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
       
-      updateSlimeBossScale();
-      
-      UI.status.textContent = `💥 HIT! The Slime shrinks! Boss HP: ${runtime.eHP}%`;
+      updateSugarBossScale();
+      UI.status.textContent = `💥 HIT! Boss Health: ${runtime.eHP}%`;
       UI.status.style.color = "var(--primary)";
 
       if (runtime.eHP <= 0) progressCampaignLevel();
     } else {
-      UI.status.textContent = "❌ Too far away! Get closer to the Slime King while running!";
+      UI.status.textContent = "❌ Too far away! Jog closer to strike!";
     }
   }
 
   function progressCampaignLevel() {
     runtime.halted = true;
-    clearAllSlimeHazards();
+    clearAllSugarHazards();
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
+
+    UI.overlay.querySelector('.how-to-play-box').style.display = 'none';
+    UI.overlay.querySelector('.setup-box').style.display = 'none';
+    UI.overlay.querySelector('.safety-warning-box').style.display = 'none';
+    UI.overlay.querySelectorAll('p').forEach(p => p.remove());
+
+    let levelDesc = document.createElement('p');
+    levelDesc.style.color = '#d1d5db';
+    levelDesc.style.fontSize = '0.95rem';
+    levelDesc.style.maxWidth = '320px';
+    levelDesc.style.lineHeight = '1.5';
+    levelDesc.style.marginBottom = '25px';
 
     if (runtime.currentLevel < 3) {
       runtime.currentLevel++;
       setTimeout(() => {
         UI.title.textContent = `LEVEL ${runtime.currentLevel} STARTING!`;
-        UI.safety.style.display = 'none'; 
-        UI.desc.innerHTML = runtime.currentLevel === 2 
-          ? "<b>Level 2 Alert:</b> Slime King has formed a thick mucus shield and is spitting <b>Slime Globs</b>! Dodge them or you'll get stuck in messy puddles!"
-          : "<b>Final Stage Alert:</b> The Slime output has become extremely aggressive! Maintain high movement speeds to dodge incoming traps!";
+        levelDesc.innerHTML = runtime.currentLevel === 2 
+          ? "<b>Level 2 Alert:</b> Target is growing armor and throwing obstacles! Dodge traps or get caught in syrup!"
+          : "<b>Final Stage Alert:</b> Danger speed is maximized! Keep stepping fast to outrun traps and find your Apple!";
+        
+        UI.overlay.insertBefore(levelDesc, UI.btn);
         UI.btn.textContent = `PROCEED TO LEVEL ${runtime.currentLevel}`;
         UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
         UI.overlay.style.display = 'flex';
       }, 1000);
     } else {
       setTimeout(() => {
-        UI.title.textContent = "🏆 CONGRATULATIONS! SLIME KING DEFEATED!";
-        UI.safety.style.display = 'none';
-        UI.desc.textContent = "You successfully defeated the Slime King and cleared all 3 adventure exercise phases!";
-        UI.btn.textContent = "PLAY CAMPAIGN AGAIN";
+        UI.title.textContent = "🏆 VICTORY COMPLETE!";
+        levelDesc.textContent = "Brilliant work! You completed your active workout and finished your journey!";
+        
+        UI.overlay.insertBefore(levelDesc, UI.btn);
+        UI.btn.textContent = "REPLAY GAME";
         runtime.currentLevel = 1;
         UI.badge.textContent = `LEVEL 1`;
         UI.overlay.style.display = 'flex';
@@ -733,7 +879,7 @@
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
     if (e.code === 'ShiftLeft' || e.code === 'Space') {
-      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; 
+      let simulatedGain = runtime.isStuckInSyrup ? 0.7 : 2.0;
       runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
     }
     if (e.code === 'KeyE') processCombatStrike();
