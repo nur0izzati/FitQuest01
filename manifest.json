@@ -1,21 +1,22 @@
 {
+  "name": "FitQuest Fitness RPG",
   "short_name": "FitQuest",
-  "name": "FitQuest: Slime King Campaign",
+  "description": "An interactive fitness-based RPG prototype where physical movement drives gameplay.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0e12",
+  "theme_color": "#0d0e12",
+  "orientation": "landscape",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/192/192062.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/512/512140.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
-  ],
-  "start_url": "./index.html",
-  "background_color": "#12141c",
-  "theme-color": "#00e5ff",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
