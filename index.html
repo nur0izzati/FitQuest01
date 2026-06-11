@@ -10,15 +10,17 @@
 
 <div id="game-container">
   <div id="overlay">
-    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START GAME</button>
-    
-    <a href="FitQuest.zip" download="FitQuest.zip" style="text-decoration: none; margin-top: 15px;">
-      <button class="cta-btn" style="background: linear-gradient(135deg, #00e5ff 0%, #008699 100%); box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3); font-size: 1rem; padding: 12px 35px;">
-        📥 DOWNLOAD SOURCE (.ZIP)
-      </button>
-    </a>
     <h1 id="menu-title">FITQUEST</h1>
     
+    <div class="setup-box">
+      <h3>Select Stage Level</h3>
+      <div class="level-arrow-container">
+        <button class="arrow-btn" id="prev-lvl-btn" onclick="changeMenuLevel(-1)">⬅️</button>
+        <span id="menu-level-display">LEVEL 1</span>
+        <button class="arrow-btn" id="next-lvl-btn" onclick="changeMenuLevel(1)">➡️</button>
+      </div>
+    </div>
+
     <div class="setup-box">
       <h3>Select Character</h3>
       <div class="char-toggle-container">
@@ -29,6 +31,15 @@
     
     <div class="how-to-play-box">
       <h3>🏃‍♂️ How To Play</h3>
+      
+      <div id="target-boss-preview">
+        <div class="boss-avatar-frame"></div>
+        <div class="boss-instruction-text">
+          <b>MISSION TARGET:</b><br>
+          Find and attack the <span>Sugar Cube Boss</span> to destroy the excess sugar calories!
+        </div>
+      </div>
+
       <ul>
         <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick on the screen to aim your character in a direction. <i>(Note: Joystick alone will not move you!)</i></li>
         <li><b>Step 2 (Move):</b> While holding the joystick, physically **walk or jog on the spot** to make your character run forward.</li>
