@@ -1,21 +1,31 @@
-// Example structural mapping inside app.js 
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker Active:', reg.scope))
+      .catch(err => console.log('Service Worker Crashed:', err));
+  });
+}
 
-// When clicking "START PHYSICAL GAME"
-document.getElementById('btn-start-flow').addEventListener('click', () => {
-  document.getElementById('screen-dashboard').classList.add('hidden');
-  document.getElementById('screen-calibration').classList.remove('hidden');
-  // Trigger sensor setup functions here...
+// PWA Direct Installation Banner Logic
+let deferredPrompt;
+const installBtn = document.getElementById('install-pwa-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+
+  installBtn.addEventListener('click', () => {
+    installBtn.style.display = 'none';
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choice) => {
+      if (choice.outcome === 'accepted') console.log('User installed game shell.');
+      deferredPrompt = null;
+    });
+  });
 });
 
-// When backing out from Calibration window
-document.getElementById('btn-abort-cal').addEventListener('click', () => {
-  document.getElementById('screen-calibration').classList.add('hidden');
-  document.getElementById('screen-dashboard').classList.remove('hidden');
-});
-
-// When moving from Calibration into the Game container
-document.getElementById('btn-ignite-game').addEventListener('click', () => {
-  document.getElementById('screen-calibration').classList.add('hidden');
-  document.getElementById('game-container').classList.remove('hidden');
-  // Call game launch logic here...
+window.addEventListener('appinstalled', () => {
+  installBtn.style.display = 'none';
 });
