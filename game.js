@@ -1,4 +1,3 @@
-// GAME ENGINE SPECIFIC VALUES
 const SETTINGS = {
   moveCutoff: 11.8,
   shakeCutoff: 23.5,
