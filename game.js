@@ -20,7 +20,7 @@ let runtime = {
   pHP: 100, eHP: 100,
   lastAttack: 0, halted: true, padActive: false,
   currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
-  currentLevel: 1,
+  currentLevel: 1, 
   hasPowerUpBoost: false,
   powerX: 0, powerY: 0,
   powerSpawned: false,
@@ -46,8 +46,18 @@ const UI = {
   status: document.getElementById('status-msg'),
   motionInfo: document.getElementById('motion-display'),
   padBoundary: document.getElementById('joy-boundary'),
-  padStick: document.getElementById('joy-stick')
+  padStick: document.getElementById('joy-stick'),
+  menuLevelDisplay: document.getElementById('menu-level-display')
 };
+
+function changeMenuLevel(direction) {
+  let targetLevel = runtime.currentLevel + direction;
+  if (targetLevel >= 1 && targetLevel <= 3) {
+    runtime.currentLevel = targetLevel;
+    UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
+    UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+  }
+}
 
 function selectGender(gender) {
   const femaleBtn = document.getElementById('btn-female');
@@ -364,7 +374,7 @@ function triggerGameOverScreen() {
   UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; 
   UI.overlay.querySelector('.setup-box').style.display = 'none'; 
   UI.overlay.querySelector('.safety-warning-box').style.display = 'block';
-  UI.overlay.querySelector('p')?.remove(); 
+  UI.overlay.querySelectorAll('#menu-desc').forEach(p => p.remove()); 
   
   let retryDesc = document.createElement('p');
   retryDesc.id = 'menu-desc';
@@ -420,6 +430,7 @@ function processCombatStrike() {
   }
 }
 
+// FUNGSI DIKEMASKINI: Ditambah Paparan Fakta Kesihatan & Bahaya Diabetes Sepasukan Kalah
 function progressCampaignLevel() {
   runtime.halted = true;
   clearAllSugarHazards();
@@ -429,39 +440,64 @@ function progressCampaignLevel() {
   UI.overlay.querySelector('.setup-box').style.display = 'none';
   UI.overlay.querySelector('.safety-warning-box').style.display = 'none';
   UI.overlay.querySelectorAll('p').forEach(p => p.remove());
+  UI.overlay.querySelectorAll('.health-fact-box').forEach(b => b.remove());
 
-  let levelDesc = document.createElement('p');
-  levelDesc.style.color = '#d1d5db';
-  levelDesc.style.fontSize = '0.95rem';
-  levelDesc.style.maxWidth = '320px';
-  levelDesc.style.lineHeight = '1.5';
-  levelDesc.style.marginBottom = '25px';
+  // Cipta satu kotak khas untuk mesej kesedaran kesihatan (Health Fact Box)
+  let factBox = document.createElement('div');
+  factBox.className = 'health-fact-box';
+  factBox.style.background = 'rgba(0, 229, 255, 0.08)';
+  factBox.style.border = '2px solid #00e5ff';
+  factBox.style.borderRadius = '12px';
+  factBox.style.padding = '15px';
+  factBox.style.margin = '15px 0 25px 0';
+  factBox.style.maxWidth = '340px';
+  factBox.style.textAlign = 'left';
 
-  if (runtime.currentLevel < 3) {
-    runtime.currentLevel++;
-    setTimeout(() => {
-      UI.title.textContent = `LEVEL ${runtime.currentLevel} STARTING!`;
-      levelDesc.innerHTML = runtime.currentLevel === 2 
-        ? "<b>Level 2 Alert:</b> Target is growing armor and throwing obstacles! Dodge traps or get caught in syrup!"
-        : "<b>Final Stage Alert:</b> Danger speed is maximized! Keep stepping fast to outrun traps and find your Apple!";
-      
-      UI.overlay.insertBefore(levelDesc, UI.btn);
-      UI.btn.textContent = `PROCEED TO LEVEL ${runtime.currentLevel}`;
-      UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
-      UI.overlay.style.display = 'flex';
-    }, 1000);
-  } else {
-    setTimeout(() => {
-      UI.title.textContent = "🏆 VICTORY COMPLETE!";
-      levelDesc.textContent = "Brilliant work! You completed your active workout and finished your journey!";
-      
-      UI.overlay.insertBefore(levelDesc, UI.btn);
-      UI.btn.textContent = "REPLAY GAME";
-      runtime.currentLevel = 1;
-      UI.badge.textContent = `LEVEL 1`;
-      UI.overlay.style.display = 'flex';
-    }, 1000);
+  let factTitle = document.createElement('h4');
+  factTitle.style.margin = '0 0 8px 0';
+  factTitle.style.color = '#00e5ff';
+  factTitle.style.fontSize = '1rem';
+  factTitle.textContent = '🩺 HEALTH FACT REPORT';
+
+  let factContent = document.createElement('p');
+  factContent.style.color = '#e5e7eb';
+  factContent.style.fontSize = '0.85rem';
+  factContent.style.lineHeight = '1.5';
+  factContent.style.margin = '0';
+
+  factBox.appendChild(factTitle);
+  factBox.appendChild(factContent);
+
+  if (runtime.currentLevel === 1) {
+    UI.title.textContent = "🎉 LEVEL 1 CLEARED!";
+    factContent.innerHTML = "<b>Empty Calories:</b> Sugar provides instant energy but has 0 nutritional value. By actively jogging just now, you successfully burned off those empty calories before they turned into stored body fat!";
+    
+    runtime.currentLevel = 2;
+    UI.btn.textContent = "PROCEED TO LEVEL 2";
+    UI.badge.textContent = `LEVEL 2`;
+  } 
+  else if (runtime.currentLevel === 2) {
+    UI.title.textContent = "🎉 LEVEL 2 CLEARED!";
+    factContent.innerHTML = "<b>Insulin Resistance & Weight Gain:</b> Constant high sugar spikes force your pancreas to overproduce insulin. Over time, your cells become numb to it (insulin resistance), leading to fat storage, high blood pressure, and obesity!";
+    
+    runtime.currentLevel = 3;
+    UI.btn.textContent = "PROCEED TO LEVEL 3";
+    UI.badge.textContent = `LEVEL 3`;
+  } 
+  else if (runtime.currentLevel === 3) {
+    UI.title.textContent = "🏆 VICTORY OVER DIABETES!";
+    factContent.innerHTML = "<b>Chronic Diabetes Risk:</b> When insulin fails completely, sugar builds up in your blood, causing <b>Type 2 Diabetes</b>. This can lead to blindness, kidney failure, and nerve damage. Congratulations! Your active steps today prove that exercise is the ultimate shield against chronic health diseases!";
+    
+    runtime.currentLevel = 1;
+    UI.btn.textContent = "PLAY AGAIN";
+    UI.badge.textContent = `LEVEL 1`;
   }
+
+  UI.overlay.insertBefore(factBox, UI.btn);
+  
+  setTimeout(() => {
+    UI.overlay.style.display = 'flex';
+  }, 600);
 }
 
 let testKeys = {};
