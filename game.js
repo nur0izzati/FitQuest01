@@ -29,8 +29,6 @@ let runtime = {
   sugarPuddles: [],
   lastSugarFired: 0,
   selectedSprite: 'assets/hero-sprite.png',
-  
-  // DATA PEMASA BARU
   startTime: 0,
   elapsedTime: 0
 };
@@ -52,13 +50,13 @@ const UI = {
   padBoundary: document.getElementById('joy-boundary'),
   padStick: document.getElementById('joy-stick'),
   menuLevelDisplay: document.getElementById('menu-level-display'),
-  
-  // ELEMEN UI TIMERS BARU
   timerBadge: document.getElementById('timer-badge'),
-  highScoreDisplay: document.getElementById('high-score-display')
+  highScoreDisplay: document.getElementById('high-score-display'),
+  
+  // ELEMEN ANAK PANAH BARU
+  navArrow: document.getElementById('nav-arrow')
 };
 
-// Panggil fungsi paparan rekod sebaik sahaja skrip dimuatkan
 displayCurrentLevelHighScore();
 
 function changeMenuLevel(direction) {
@@ -67,20 +65,17 @@ function changeMenuLevel(direction) {
     runtime.currentLevel = targetLevel;
     UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
     UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
-    displayCurrentLevelHighScore(); // Kemaskini paparan high score level baru
+    displayCurrentLevelHighScore();
   }
 }
 
-// BANTUAN: Format mili-saat kepada tulisan minit:saat.milisaat (00:00.00)
 function formatTime(ms) {
   let minutes = Math.floor(ms / 60000);
   let seconds = Math.floor((ms % 60000) / 1000);
   let centiseconds = Math.floor((ms % 1000) / 10);
-  
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
 }
 
-// BANTUAN: Baca dan tunjuk high score lokal dari browser
 function displayCurrentLevelHighScore() {
   let savedScore = localStorage.getItem(`fitquest_lvl_${runtime.currentLevel}`);
   if (savedScore) {
@@ -93,7 +88,6 @@ function displayCurrentLevelHighScore() {
 function selectGender(gender) {
   const femaleBtn = document.getElementById('btn-female');
   const maleBtn = document.getElementById('btn-male');
-  
   if (gender === 'female') {
     femaleBtn.classList.add('active');
     maleBtn.classList.remove('active');
@@ -107,7 +101,6 @@ function selectGender(gender) {
 
 function igniteEngine() {
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
-
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
   } else {
@@ -120,10 +113,11 @@ function setupEnvironment() {
   runtime.halted = false;
   runtime.pHP = 100;
   UI.pFill.style.width = '100%';
-  runtime.pX = window.innerWidth * 0.15;
-  runtime.pY = window.innerHeight / 2 - 50;
   
-  // REKOD MASA BERMULA DI SINI
+  // Untuk menguji elemen pencarian arah, kita letakkan Hero di bucu kiri bawah
+  runtime.pX = window.innerWidth * 0.1;
+  runtime.pY = window.innerHeight * 0.75;
+  
   runtime.startTime = performance.now();
   runtime.elapsedTime = 0;
   UI.timerBadge.textContent = "⏱️ 00:00.00";
@@ -144,8 +138,9 @@ function setupEnvironment() {
 }
 
 function resetBossForLevel() {
-  runtime.eX = window.innerWidth * 0.75;
-  runtime.eY = window.innerHeight / 2 - 60;
+  // Dan Boss diletakkan jauh sedikit di penjuru kanan atas supaya player perlu mencari arah
+  runtime.eX = window.innerWidth * 0.8;
+  runtime.eY = window.innerHeight * 0.15;
   runtime.eHP = 100;
   runtime.hasPowerUpBoost = false;
   runtime.isStuckInSyrup = false;
@@ -179,17 +174,13 @@ function updateSugarBossScale() {
 function spawnPowerUpRandomly() {
   runtime.powerSpawned = true;
   runtime.hasPowerUpBoost = false;
-  
   const horizontalMargin = window.innerWidth * 0.2;
   const verticalMargin = window.innerHeight * 0.2;
-  
   runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
   runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
-
   UI.power.style.left = `${runtime.powerX}px`;
   UI.power.style.top = `${runtime.powerY}px`;
   UI.power.style.display = 'block';
-  
   UI.status.textContent = "🍏 Apple Spawned! Grab it quick to break the shield!";
   UI.status.style.color = "var(--powerup)";
 }
@@ -202,7 +193,6 @@ function buildJoystickControl() {
     if (!runtime.padActive || runtime.halted) return;
     let targetTouch = e.touches ? e.touches[0] : e;
     let geoBox = bound.getBoundingClientRect();
-    
     let xOffset = targetTouch.clientX - (geoBox.left + SETTINGS.padRadius);
     let yOffset = targetTouch.clientY - (geoBox.top + SETTINGS.padRadius);
     let absoluteLength = Math.sqrt(xOffset * xOffset + yOffset * yOffset);
@@ -252,14 +242,41 @@ function evaluateDeviceSensors(event) {
     runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
     UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP (Run Faster!)' : 'Moving'}`;
   }
-
   if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
+}
+
+// FUNGSI UTAMAA BARU: Mengira & memutarkan anak panah navigasi mengikut kedudukan objektif
+function updateNavigationArrow() {
+  if (runtime.halted) return;
+
+  let eWidth = parseInt(UI.enemy.style.width) || 120;
+  // Cari pusat titik Hero dan Boss
+  let heroCenterX = runtime.pX + 50;
+  let heroCenterY = runtime.pY + 50;
+  let bossCenterX = runtime.eX + (eWidth / 2);
+  let bossCenterY = runtime.eY + (eWidth / 2);
+
+  let deltaX = bossCenterX - heroCenterX;
+  let deltaY = bossCenterY - heroCenterY;
+  let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  // Jika jarak Hero dengan Boss kurang daripada 160px, sembunyikan anak panah
+  if (distance < 160) {
+    UI.navArrow.style.display = 'none';
+  } else {
+    UI.navArrow.style.display = 'flex';
+    // Guna formula Math.atan2 untuk mendapatkan sudut radian ke arah Boss
+    let angleRadian = Math.atan2(deltaY, deltaX);
+    let angleDegree = angleRadian * (180 / Math.PI);
+    
+    // Putarkan grafik anak panah mengikut sudut darjah tepat
+    UI.navArrow.style.transform = `rotate(${angleDegree}deg)`;
+  }
 }
 
 function engineFrameTick(timestamp) {
   if (runtime.halted) return;
 
-  // Kira masa berlalu (elapsed time)
   runtime.elapsedTime = timestamp - runtime.startTime;
   UI.timerBadge.textContent = `⏱️ ${formatTime(runtime.elapsedTime)}`;
 
@@ -302,6 +319,7 @@ function engineFrameTick(timestamp) {
     }
   }
 
+  updateNavigationArrow(); // Panggil pengira anak panah pada setiap bingkai pergerakan!
   refreshViewportLayouts();
   requestAnimationFrame(engineFrameTick);
 }
@@ -352,7 +370,6 @@ function processSugarHazards() {
       runtime.pHP = Math.max(runtime.pHP - 12, 0);
       UI.pFill.style.width = `${runtime.pHP}%`;
       UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
-      
       UI.status.textContent = `💥 Hit by flying obstacle!`;
       UI.status.style.color = "var(--danger)";
 
@@ -366,10 +383,7 @@ function processSugarHazards() {
     let dx = p.x - (runtime.pX + 50);
     let dy = p.y - (runtime.pY + 50);
     let trapDistance = Math.sqrt(dx*dx + dy*dy);
-
-    if (trapDistance < 50) {
-      currentlyOnPuddle = true;
-    }
+    if (trapDistance < 50) currentlyOnPuddle = true;
   }
 
   if (currentlyOnPuddle !== runtime.isStuckInSyrup) {
@@ -391,13 +405,11 @@ function processSugarHazards() {
 function createSugarPuddle(rawX, rawY) {
   let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
   let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
-
   let puddle = document.createElement('div');
   puddle.className = 'sugar-puddle';
   puddle.style.left = `${targetX}px`;
   puddle.style.top = `${targetY}px`;
   UI.container.appendChild(puddle);
-
   runtime.sugarPuddles.push({ element: puddle, x: targetX, y: targetY });
 
   if (runtime.sugarPuddles.length > 6) {
@@ -422,7 +434,6 @@ function triggerGameOverScreen() {
   retryDesc.style.marginBottom = '25px';
   retryDesc.textContent = "Your energy was completely drained! Let's jog it out and try again.";
   UI.overlay.insertBefore(retryDesc, UI.btn);
-
   UI.btn.textContent = "RETRY THIS LEVEL";
   UI.overlay.style.display = 'flex';
 }
@@ -453,42 +464,36 @@ function processCombatStrike() {
       UI.status.style.color = "var(--danger)";
       return;
     }
-
     let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
     UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
     runtime.eHP = Math.max(runtime.eHP - dmg, 0); 
     UI.eFill.style.width = `${runtime.eHP}%`;
     UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
-    
     updateSugarBossScale();
     UI.status.textContent = `💥 HIT! Boss Health: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
 
-    if (runtime.eHP <= 0) processLevelVictory(); // Ditukar ke fungsi perantara untuk semak High Score
+    if (runtime.eHP <= 0) processLevelVictory();
   } else {
     UI.status.textContent = "❌ Too far away! Jog closer to strike!";
   }
 }
 
-// FUNGSI BARU: Semak dan simpan rekod masa tersingkat dalam Storage telefon
 function checkAndSaveHighScore(level, completionTime) {
   let recordKey = `fitquest_lvl_${level}`;
   let existingRecord = localStorage.getItem(recordKey);
-  
   if (!existingRecord || completionTime < parseInt(existingRecord)) {
     localStorage.setItem(recordKey, completionTime.toString());
-    return true; // Bermaksud rekod baru tercipta!
+    return true; 
   }
   return false;
 }
 
-// FUNGSI BARU: Menguruskan kemenangan dan pembekuan masa
 function processLevelVictory() {
   runtime.halted = true;
   clearAllSugarHazards();
   window.removeEventListener('devicemotion', evaluateDeviceSensors);
 
-  // Semak sama ada masa akhir ini adalah rekod baru atau tidak
   let isNewRecord = checkAndSaveHighScore(runtime.currentLevel, runtime.elapsedTime);
   let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
@@ -510,7 +515,7 @@ function processLevelVictory() {
 
   let factTitle = document.createElement('h4');
   factTitle.style.margin = '0 0 8px 0';
-  factTitle.style.color = isNewRecord ? '#ffd700' : '#00e5ff'; // Tukar warna emas kalau pecah rekod
+  factTitle.style.color = isNewRecord ? '#ffd700' : '#00e5ff'; 
   factTitle.style.fontSize = '1rem';
   factTitle.textContent = isNewRecord ? '🥇 NEW BEST RECORD TIME!' : '🩺 HEALTH FACT REPORT';
 
@@ -523,13 +528,11 @@ function processLevelVictory() {
   factBox.appendChild(factTitle);
   factBox.appendChild(factContent);
 
-  // Tulis info masa tamat di atas laporan kesihatan
   let timeNote = `<b style="color: #00ff66;">Your Clear Time: ${finalTimeFormatted}</b><br><br>`;
 
   if (runtime.currentLevel === 1) {
     UI.title.textContent = "🎉 LEVEL 1 CLEARED!";
     factContent.innerHTML = timeNote + "<b>Empty Calories:</b> Sugar provides instant energy but has 0 nutritional value. By actively jogging just now, you successfully burned off those empty calories before they turned into stored body fat!";
-    
     runtime.currentLevel = 2;
     UI.btn.textContent = "PROCEED TO LEVEL 2";
     UI.badge.textContent = `LEVEL 2`;
@@ -537,7 +540,6 @@ function processLevelVictory() {
   else if (runtime.currentLevel === 2) {
     UI.title.textContent = "🎉 LEVEL 2 CLEARED!";
     factContent.innerHTML = timeNote + "<b>Insulin Resistance & Weight Gain:</b> Constant high sugar spikes force your pancreas to overproduce insulin. Over time, your cells become numb to it (insulin resistance), leading to fat storage, high blood pressure, and obesity!";
-    
     runtime.currentLevel = 3;
     UI.btn.textContent = "PROCEED TO LEVEL 3";
     UI.badge.textContent = `LEVEL 3`;
@@ -545,14 +547,13 @@ function processLevelVictory() {
   else if (runtime.currentLevel === 3) {
     UI.title.textContent = "🏆 VICTORY OVER DIABETES!";
     factContent.innerHTML = timeNote + "<b>Chronic Diabetes Risk:</b> When insulin fails completely, sugar builds up in your blood, causing <b>Type 2 Diabetes</b>. This can lead to blindness, kidney failure, and nerve damage. Congratulations! Your active steps today prove that exercise is the ultimate shield against chronic health diseases!";
-    
     runtime.currentLevel = 1;
     UI.btn.textContent = "PLAY AGAIN";
     UI.badge.textContent = `LEVEL 1`;
   }
 
   UI.overlay.insertBefore(factBox, UI.btn);
-  displayCurrentLevelHighScore(); // Segarkan nilai paparan menu emas semula
+  displayCurrentLevelHighScore();
 
   setTimeout(() => {
     UI.overlay.style.display = 'flex';
