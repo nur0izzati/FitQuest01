@@ -81,7 +81,6 @@ body {
   transform: scale(0.9);
 }
 
-/* GAYA HIGH SCORE EMAS BARU */
 #high-score-display {
   font-size: 0.85rem;
   color: #ffd700;
@@ -254,6 +253,31 @@ body {
   transition: filter 0.2s;
 }
 
+/* REKA BENTUK ANAK PANAH NEON JALAN (BARU) */
+#nav-arrow {
+  position: absolute;
+  top: -35px; /* Duduk di atas kepala karakter */
+  left: 35px;
+  width: 30px;
+  height: 30px;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+  color: #00e5ff;
+  font-weight: bold;
+  pointer-events: none;
+  transform-origin: center center;
+  z-index: 15;
+  animation: arrowFloatPulse 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes arrowFloatPulse {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.15); }
+}
+
 #enemy {
   position: absolute;
   width: 120px;
@@ -343,7 +367,6 @@ body {
 #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
 #e-fill { background: linear-gradient(90deg, #ff3366, #ff99bb); }
 
-/* PENYUSUNAN BADGE TENGAH ATAS BARU */
 .center-ui-badges {
   display: flex;
   flex-direction: column;
