@@ -1,502 +1,85 @@
 :root {
   --primary: #2ee575;
   --danger: #ff4d6d;
-  --powerup: #ffd166;
-  --sugar-white: #ffffff;
-  --kawaii-pink: #ff85a2;
-  --panel-bg: rgba(25, 35, 30, 0.96); /* Dark solid panel color */
+  --panel-bg: rgba(25, 35, 30, 0.96);
 }
 
-* {
-  box-sizing: border-box;
-  user-select: none;
-  -webkit-user-select: none;
-}
+* { box-sizing: border-box; user-select: none; }
 
-body {
+body, html {
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevents unwanted scrolling */
   background: #5cba5c;
-  color: #fff;
+  font-family: sans-serif;
 }
 
 #game-container {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-image: url('assets/background.png');
-  background-repeat: repeat;           
-  background-size: 320px auto;         
-  background-position: 0px 0px;
-  background-color: #5cba5c;
   overflow: hidden;
-  touch-action: none;
+  touch-action: none; /* Crucial for joystick/movement */
 }
 
-/* HALANGAN COKLAT & ENVIRONMENT ELEMENTS */
-.chocolate-wall {
-  position: absolute;
-  background-image: url('assets/choco-bar.png');
-  background-repeat: repeat;
-  background-size: 50px 50px;
-  background-position: top left;
-  border: 4px solid #5a3820;
-  border-radius: 8px;
-  box-shadow: inset 0 0 12px rgba(0,0,0,0.6), 0 6px 12px rgba(0,0,0,0.45);
-  z-index: 4; /* Keeps walls on the ground layer */
-}
-
-.chocolate-wall::before {
-  content: '';
-  position: absolute;
-  top: 2px; left: 2px; right: 2px; bottom: 2px;
-  border: 1px dashed rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
-  pointer-events: none;
-}
-
-.field-item {
-  position: absolute;
-  font-size: 1.1rem;
-  pointer-events: none;
-  opacity: 0.8;
-  z-index: 2;
-}
-
-.sugar-puddle {
-  position: absolute;
-  width: 80px; 
-  height: 35px;
-  background: rgba(139, 92, 246, 0.5); 
-  border-radius: 50%;
-  box-shadow: 0 0 14px #8b5cf6;
-  z-index: 4; /* Keeps puddles flat on the ground */
-}
-
-/* CHARACTERS (HERO & BOSS) */
-#enemy {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  background-image: url('assets/sugar-cube.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center center; 
-  image-rendering: pixelated;
-  z-index: 12; /* FIX: Lifts the boss high enough to clear chocolate walls/puddles */
-  transform-origin: center center;
-  animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
-  transition: filter 0.3s;
-}
-#enemy.shielded {
-  filter: drop-shadow(0 0 15px #ffffff) brightness(1.2);
-}
-
-#player {
-  position: absolute;
-  width: 100px;           
-  height: 100px;          
-  will-change: left, top;
-  background-image: url('assets/hero-sprite.png'); 
-  background-repeat: no-repeat;
-  background-size: 300% 400%;   
-  background-position: 50% 0%;  
-  image-rendering: pixelated;   
-  z-index: 13; /* FIX: Keeps player above environment and slightly in front of boss */
-  transition: filter 0.2s;
-}
-#player.sticky-slow {
-  filter: sepia(0.5) saturate(2) hue-rotate(-45deg) brightness(0.8);
-}
-
-/* PROJECTILES & ITEMS */
-.sugar-glob {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
-  border-radius: 4px;
-  box-shadow: 0 0 15px var(--sugar-white);
-  z-index: 14;
-}
-
-#powerup-item {
-  position: absolute;
-  width: 50px; 
-  height: 50px; 
-  background-image: url('assets/apple.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 0 12px var(--powerup));
-  display: none;
-  z-index: 11;
-}
-
-#nav-arrow {
-  position: absolute;
-  top: 50px; 
-  left: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  pointer-events: none;
-  transform-origin: 0px 0px; 
-  z-index: 15;
-  filter: drop-shadow(0 0 8px #00e5ff);
-}
-.arrow-stem {
-  height: 6px;
-  width: 40px; 
-  background: linear-gradient(90deg, rgba(0, 229, 255, 0.1) 0%, rgba(0, 229, 255, 1) 100%);
-  border-radius: 3px;
-}
-.arrow-head {
-  width: 0; height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-left: 14px solid #00e5ff;
-  margin-left: -2px;
-}
-
-/* MAIN MENU OVERLAY */
+/* --- OVERLAY: Always on top --- */
 #overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 20, 18, 0.5); 
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 20, 18, 0.8);
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  z-index: 100;
-  padding: 20px 10px;
-  overflow-y: auto; 
-  touch-action: pan-y; 
-  -webkit-overflow-scrolling: touch;
-}
-
-.menu-card {
-  background: var(--panel-bg); /* FIX: Fixes transparency, rendering full solid card background */
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
-  padding: 24px 20px;
-  width: 100%;
-  max-width: 360px;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(46, 229, 117, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #ffffff;
-}
-
-#menu-title {
-  margin: 0 0 4px 0;
-  font-size: 2.1rem;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 0 10px var(--kawaii-pink), 0 0 20px var(--kawaii-pink);
-  letter-spacing: 1px;
-  text-align: center;
-  animation: titleFloat 2.5s infinite alternate ease-in-out;
-}
-
-@keyframes titleFloat {
-  0% { transform: translateY(0px) scale(1); }
-  100% { transform: translateY(-4px) scale(1.02); }
-}
-
-.menu-subtitle {
-  margin: 0 0 20px 0;
-  font-size: 0.85rem;
-  color: #cbd5e1;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  text-align: center;
-}
-
-.interactive-panel {
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-
-.setup-box {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 12px;
-  margin-bottom: 12px;
-  width: 100%;
-}
-
-.setup-box h3 {
-  margin: 0 0 8px 0;
-  color: #00e5ff;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.level-arrow-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  font-weight: bold;
-  font-size: 1rem;
-  color: #ffffff;
-}
-
-.arrow-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
-}
-.arrow-btn:active { transform: scale(0.85); }
-
-.score-row-wrapper {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
+  z-index: 100; /* Ensures menu is above everything */
 }
 
-#high-score-display {
-  font-size: 0.8rem;
-  color: #ffd700;
-  font-weight: bold;
-  background: rgba(255, 215, 0, 0.1);
-  padding: 4px 12px;
-  border-radius: 6px;
-}
-
-.reset-score-btn {
-  background: rgba(255, 77, 109, 0.15);
-  border: 1px solid rgba(255, 77, 109, 0.3);
-  color: #ff4d6d;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.char-toggle-container {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 4px;
-}
-
-.char-btn {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  color: #cbd5e1;
-  padding: 10px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 0.85rem;
-}
-.char-btn.active-pink {
-  background: rgba(255, 133, 162, 0.2);
-  border-color: var(--kawaii-pink);
-  color: #fff;
-}
-
-.safety-warning-box {
-  background: rgba(255, 77, 109, 0.1);
-  border: 1.5px dashed var(--danger);
-  border-radius: 14px;
-  padding: 12px;
-  margin: 12px 0;
-  width: 100%;
-}
-
-.how-to-play-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 14px;
-  width: 100%;
-  text-align: left;
-}
-.how-to-play-box h3 {
-  margin: 0 0 12px 0;
-  color: #ffd166;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 6px;
-}
-
-#target-boss-preview {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 77, 109, 0.12);
-  border: 1px solid rgba(255, 77, 109, 0.25);
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 14px;
-}
-
-.boss-avatar-frame {
-  width: 44px;
-  height: 44px;
-  background-image: url('assets/sugar-cube.png');
+/* --- GAME ELEMENTS --- */
+#player, #enemy, #powerup-item {
+  position: absolute;
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: center;
-  border-right: 1px solid rgba(255, 77, 109, 0.2);
-  padding-right: 8px;
-  margin-right: 10px;
-  flex-shrink: 0;
-  image-rendering: pixelated;
 }
 
-.boss-instruction-text {
-  font-size: 0.78rem;
-  color: #e2e8f0;
-  line-height: 1.4;
+#player {
+  width: 100px;
+  height: 100px;
+  z-index: 10;
+  background-image: url('assets/hero-sprite.png');
 }
 
-.how-to-play-box ol {
-  margin: 0;
-  padding-left: 18px;
-  color: #e2e8f0;
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-.how-to-play-box li { margin-bottom: 10px; }
-.step-highlight { color: #00e5ff; font-weight: bold; }
-
-.cta-btn {
-  background: linear-gradient(135deg, #2ee575 0%, #1b9a4c 100%);
-  border: none;
-  color: #fff;
-  padding: 14px 0;
-  width: 100%;
-  font-size: 1.15rem;
-  font-weight: 800;
-  border-radius: 40px;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(46, 229, 117, 0.35);
-  margin-top: 12px;
-}
-.cta-btn:active { transform: scale(0.95); }
-.pulse-button { animation: buttonPulseGlow 1.8s infinite alternate ease-in-out; }
-
-@keyframes buttonPulseGlow {
-  0% { box-shadow: 0 0 10px rgba(46, 229, 117, 0.3); }
-  100% { box-shadow: 0 0 25px rgba(46, 229, 117, 0.65); }
+#enemy {
+  width: 120px;
+  height: 120px;
+  z-index: 5;
+  background-image: url('assets/sugar-cube.png');
 }
 
-/* UI SKRIN UTAMA (IN-GAME HEADS-UP DISPLAY) */
+/* --- UI LAYER: Above game but below overlay --- */
 #ui-layer {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
-  z-index: 50; /* Sits over the playing field characters */
-}
-
-.top-bar { display: flex; justify-content: space-between; width: 100%; align-items: flex-start; }
-.hp-housing { width: 32%; }
-.hp-label { font-size: 0.72rem; text-transform: uppercase; margin-bottom: 4px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
-.hp-track { width: 100%; height: 12px; background: rgba(20,25,22,0.8); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 6px; overflow: hidden; }
-.hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
-#p-fill { background: linear-gradient(90deg, #2ee575, #00e5ff); }
-#e-fill { background: linear-gradient(90deg, #ff4d6d, #ff85a2); }
-
-.center-ui-badges { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 32%; }
-#level-badge {
-  background: rgba(20, 25, 22, 0.85);
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: bold;
-  color: var(--powerup);
-}
-#timer-badge {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-family: monospace;
-  font-weight: bold;
-  color: #00e5ff;
-}
-
-.control-deck {
+  top: 0;
+  left: 0;
   width: 100%;
-  background: rgba(20, 28, 24, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 12px;
-  text-align: center;
-  backdrop-filter: blur(10px);
-  margin-bottom: 25px; 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  height: 100%;
+  pointer-events: none; /* Allows clicks to pass through to the game */
+  z-index: 50;
+  padding: 20px;
 }
 
-#status-msg { font-size: 0.95rem; font-weight: bold; color: #00e5ff; margin-bottom: 2px; height: 22px; }
-.exercise-metrics { font-size: 0.75rem; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.3px; }
-
+/* --- JOYSTICK --- */
 #joy-boundary {
   position: absolute;
-  bottom: 155px; 
+  bottom: 50px;
   left: 30px;
-  width: 110px; height: 110px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  width: 100px;
+  height: 100px;
+  border: 2px solid white;
   border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 60; /* Higher than ui-layer background panels to keep responsive touch input */
-  backdrop-filter: blur(3px);
-}
-#joy-stick {
-  width: 44px; height: 44px;
-  background: rgba(255, 255, 255, 0.35);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-/* ANIMATIONS */
-.attack-pulse { animation: hitPulse 0.2s ease-out; }
-.hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
-.float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
-
-@keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
-@keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
-@keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
-
-@keyframes enemyIdleAnimation {
-  0% { transform: scaleX(1) scaleY(1) translateY(0); }
-  50% { transform: scaleX(1.05) scaleY(0.95) translateY(2px); }
-  100% { transform: scaleX(0.95) scaleY(1.05) translateY(-2px); }
+  pointer-events: auto; /* Required for touch input */
+  z-index: 60;
 }
