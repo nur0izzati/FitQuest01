@@ -6,7 +6,7 @@ const SETTINGS = {
   frictionFactor: 0.88,
   accelerationGain: 0.7,
   velocityCap: 6.5,
-  padRadius: 60,
+  padRadius: 55,
   animationSpeed: 110,
   sugarGlobVelocity: 4,
   sugarAttackFrequency: 2200,
@@ -35,6 +35,7 @@ let runtime = {
 
 const UI = {
   container: document.getElementById('game-container'),
+  decorationsContainer: document.getElementById('field-decorations'), // KONTINER BARU
   overlay: document.getElementById('overlay'),
   title: document.getElementById('menu-title'),
   safety: document.getElementById('safety-box'),
@@ -52,12 +53,34 @@ const UI = {
   menuLevelDisplay: document.getElementById('menu-level-display'),
   timerBadge: document.getElementById('timer-badge'),
   highScoreDisplay: document.getElementById('high-score-display'),
-  
-  // ELEMEN ANAK PANAH BARU
   navArrow: document.getElementById('nav-arrow')
 };
 
 displayCurrentLevelHighScore();
+
+// MENJANA HIASAN PADANG RUMPUT & BUNGA SECARA RAWAK (BARU)
+function generateProceduralFieldDecorations() {
+  UI.decorationsContainer.innerHTML = ''; 
+  const decorativeEmojis = ['🌸', '🌼', '🌿', '🌱', '🍀'];
+  const densityCount = Math.floor((window.innerWidth * window.innerHeight) / 22000); // Kepadatan mengikut saiz skrin telefon
+
+  for (let i = 0; i < densityCount; i++) {
+    let item = document.createElement('div');
+    item.className = 'field-item';
+    item.textContent = decorativeEmojis[Math.floor(Math.random() * decorativeEmojis.length)];
+    
+    // Tabur rawak kedudukan paksi koordinat X & Y
+    let posX = Math.random() * (window.innerWidth - 30);
+    let posY = Math.random() * (window.innerHeight - 30);
+    
+    item.style.left = `${posX}px`;
+    item.style.top = `${posY}px`;
+    // Beri variasi saiz bunga yang rawak supaya nampak natural
+    item.style.animationDelay = `${Math.random() * 2}s`;
+    
+    UI.decorationsContainer.appendChild(item);
+  }
+}
 
 function changeMenuLevel(direction) {
   let targetLevel = runtime.currentLevel + direction;
@@ -89,12 +112,12 @@ function selectGender(gender) {
   const femaleBtn = document.getElementById('btn-female');
   const maleBtn = document.getElementById('btn-male');
   if (gender === 'female') {
-    femaleBtn.classList.add('active');
-    maleBtn.classList.remove('active');
+    femaleBtn.className = 'char-btn active-pink';
+    maleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite.png';
   } else {
-    maleBtn.classList.add('active');
-    femaleBtn.classList.remove('active');
+    maleBtn.className = 'char-btn active-pink';
+    femaleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite2.png';
   }
 }
@@ -114,14 +137,15 @@ function setupEnvironment() {
   runtime.pHP = 100;
   UI.pFill.style.width = '100%';
   
-  // Untuk menguji elemen pencarian arah, kita letakkan Hero di bucu kiri bawah
-  runtime.pX = window.innerWidth * 0.1;
-  runtime.pY = window.innerHeight * 0.75;
+  // Letak Hero di penjuru kiri atas skrin padang
+  runtime.pX = 20;
+  runtime.pY = 20;
   
   runtime.startTime = performance.now();
   runtime.elapsedTime = 0;
   UI.timerBadge.textContent = "⏱️ 00:00.00";
 
+  generateProceduralFieldDecorations(); // Bina hiasan bunga baru di padang apabila game mula!
   clearAllSugarHazards();
   resetBossForLevel();
 
@@ -138,9 +162,11 @@ function setupEnvironment() {
 }
 
 function resetBossForLevel() {
-  // Dan Boss diletakkan jauh sedikit di penjuru kanan atas supaya player perlu mencari arah
-  runtime.eX = window.innerWidth * 0.8;
-  runtime.eY = window.innerHeight * 0.15;
+  // Letak Boss jauh di sudut pepenjuru kanan paling bawah skrin padang
+  let eWidth = 120;
+  runtime.eX = window.innerWidth - eWidth - 20;
+  runtime.eY = window.innerHeight - eWidth - 55; 
+  
   runtime.eHP = 100;
   runtime.hasPowerUpBoost = false;
   runtime.isStuckInSyrup = false;
@@ -174,10 +200,12 @@ function updateSugarBossScale() {
 function spawnPowerUpRandomly() {
   runtime.powerSpawned = true;
   runtime.hasPowerUpBoost = false;
-  const horizontalMargin = window.innerWidth * 0.2;
-  const verticalMargin = window.innerHeight * 0.2;
+  
+  const horizontalMargin = window.innerWidth * 0.25;
+  const verticalMargin = window.innerHeight * 0.25;
   runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
   runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
+  
   UI.power.style.left = `${runtime.powerX}px`;
   UI.power.style.top = `${runtime.powerY}px`;
   UI.power.style.display = 'block';
@@ -240,17 +268,15 @@ function evaluateDeviceSensors(event) {
       workYield *= SETTINGS.stickySlowFactor;
     }
     runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-    UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP (Run Faster!)' : 'Moving'}`;
+    UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP' : 'Moving'}`;
   }
   if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
 }
 
-// FUNGSI UTAMAA BARU: Mengira & memutarkan anak panah navigasi mengikut kedudukan objektif
-function updateNavigationArrow() {
+function updateNavigationArrow(timestamp) {
   if (runtime.halted) return;
 
   let eWidth = parseInt(UI.enemy.style.width) || 120;
-  // Cari pusat titik Hero dan Boss
   let heroCenterX = runtime.pX + 50;
   let heroCenterY = runtime.pY + 50;
   let bossCenterX = runtime.eX + (eWidth / 2);
@@ -260,17 +286,19 @@ function updateNavigationArrow() {
   let deltaY = bossCenterY - heroCenterY;
   let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-  // Jika jarak Hero dengan Boss kurang daripada 160px, sembunyikan anak panah
-  if (distance < 160) {
+  if (distance < 170) {
     UI.navArrow.style.display = 'none';
   } else {
     UI.navArrow.style.display = 'flex';
-    // Guna formula Math.atan2 untuk mendapatkan sudut radian ke arah Boss
     let angleRadian = Math.atan2(deltaY, deltaX);
     let angleDegree = angleRadian * (180 / Math.PI);
     
-    // Putarkan grafik anak panah mengikut sudut darjah tepat
-    UI.navArrow.style.transform = `rotate(${angleDegree}deg)`;
+    let dynamicStemLength = Math.max(35, Math.min(95, distance * 0.16));
+    const stemElement = UI.navArrow.querySelector('.arrow-stem');
+    if (stemElement) stemElement.style.width = `${dynamicStemLength}px`;
+
+    let floatOffset = Math.sin(timestamp * 0.007) * 4; 
+    UI.navArrow.style.transform = `rotate(${angleDegree}deg) translateX(${15 + floatOffset}px)`;
   }
 }
 
@@ -319,7 +347,7 @@ function engineFrameTick(timestamp) {
     }
   }
 
-  updateNavigationArrow(); // Panggil pengira anak panah pada setiap bingkai pergerakan!
+  updateNavigationArrow(timestamp);
   refreshViewportLayouts();
   requestAnimationFrame(engineFrameTick);
 }
@@ -370,7 +398,7 @@ function processSugarHazards() {
       runtime.pHP = Math.max(runtime.pHP - 12, 0);
       UI.pFill.style.width = `${runtime.pHP}%`;
       UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
-      UI.status.textContent = `💥 Hit by flying obstacle!`;
+      UI.status.textContent = `💥 Hit by sugar glob!`;
       UI.status.style.color = "var(--danger)";
 
       if (runtime.pHP <= 0) triggerGameOverScreen();
@@ -392,12 +420,10 @@ function processSugarHazards() {
       UI.player.style.filter = runtime.hasPowerUpBoost 
         ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.5) hue-rotate(330deg)'
         : 'sepia(0.6) hue-rotate(330deg) brightness(0.9)';
-      UI.status.textContent = `⚠️ Stuck in sticky syrup! Run faster to break free!`;
+      UI.status.textContent = `⚠️ Stuck in sticky syrup! Run faster!`;
       UI.status.style.color = "#ffaa00";
     } else {
-      UI.player.style.filter = runtime.hasPowerUpBoost 
-        ? 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)' 
-        : 'none';
+      UI.player.style.filter = runtime.hasPowerUpBoost ? 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)' : 'none';
     }
   }
 }
@@ -421,20 +447,24 @@ function createSugarPuddle(rawX, rawY) {
 function triggerGameOverScreen() {
   runtime.halted = true;
   clearAllSugarHazards();
-  UI.title.textContent = "💥 GAME FAILED!";
+  UI.title.textContent = "💥 QUEST FAILED";
   UI.status.textContent = "Defeated...";
-  UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; 
-  UI.overlay.querySelector('.setup-box').style.display = 'none'; 
-  UI.overlay.querySelector('.safety-warning-box').style.display = 'block';
-  UI.overlay.querySelectorAll('#menu-desc').forEach(p => p.remove()); 
+  
+  const card = UI.overlay.querySelector('.menu-card');
+  card.querySelector('.how-to-play-box').style.display = 'none'; 
+  card.querySelector('.setup-box').style.display = 'none'; 
+  card.querySelector('.safety-warning-box').style.display = 'block';
+  card.querySelectorAll('#menu-desc').forEach(p => p.remove()); 
   
   let retryDesc = document.createElement('p');
   retryDesc.id = 'menu-desc';
-  retryDesc.style.color = '#7e8494';
-  retryDesc.style.marginBottom = '25px';
-  retryDesc.textContent = "Your energy was completely drained! Let's jog it out and try again.";
-  UI.overlay.insertBefore(retryDesc, UI.btn);
-  UI.btn.textContent = "RETRY THIS LEVEL";
+  retryDesc.style.color = '#cbd5e1';
+  retryDesc.style.margin = '10px 0 20px 0';
+  retryDesc.style.fontSize = '0.85rem';
+  retryDesc.textContent = "Your energy drained completely. Let's stand up and try again!";
+  
+  card.insertBefore(retryDesc, UI.btn);
+  UI.btn.textContent = "RETRY LEVEL";
   UI.overlay.style.display = 'flex';
 }
 
@@ -460,7 +490,7 @@ function processCombatStrike() {
   
   if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
     if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-      UI.status.textContent = "🛡️ Immune! Armor protects him. Collect an Apple first!";
+      UI.status.textContent = "🛡️ Immune! Collect an Apple first!";
       UI.status.style.color = "var(--danger)";
       return;
     }
@@ -470,12 +500,12 @@ function processCombatStrike() {
     UI.eFill.style.width = `${runtime.eHP}%`;
     UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
     updateSugarBossScale();
-    UI.status.textContent = `💥 HIT! Boss Health: ${runtime.eHP}%`;
+    UI.status.textContent = `💥 HIT! Boss: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
 
     if (runtime.eHP <= 0) processLevelVictory();
   } else {
-    UI.status.textContent = "❌ Too far away! Jog closer to strike!";
+    UI.status.textContent = "❌ Too far! Jog closer to the boss!";
   }
 }
 
@@ -497,62 +527,62 @@ function processLevelVictory() {
   let isNewRecord = checkAndSaveHighScore(runtime.currentLevel, runtime.elapsedTime);
   let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
-  UI.overlay.querySelector('.how-to-play-box').style.display = 'none';
-  UI.overlay.querySelector('.setup-box').style.display = 'none';
-  UI.overlay.querySelector('.safety-warning-box').style.display = 'none';
-  UI.overlay.querySelectorAll('p').forEach(p => p.remove());
-  UI.overlay.querySelectorAll('.health-fact-box').forEach(b => b.remove());
+  const card = UI.overlay.querySelector('.menu-card');
+  card.querySelector('.how-to-play-box').style.display = 'none';
+  card.querySelector('.setup-box').style.display = 'none';
+  card.querySelector('.safety-warning-box').style.display = 'none';
+  card.querySelectorAll('.health-fact-box').forEach(b => b.remove());
+  card.querySelectorAll('#menu-desc').forEach(p => p.remove());
 
   let factBox = document.createElement('div');
   factBox.className = 'health-fact-box';
-  factBox.style.background = 'rgba(0, 229, 255, 0.08)';
-  factBox.style.border = '2px solid #00e5ff';
-  factBox.style.borderRadius = '12px';
-  factBox.style.padding = '15px';
-  factBox.style.margin = '15px 0 25px 0';
-  factBox.style.maxWidth = '340px';
+  factBox.style.background = 'rgba(46, 229, 117, 0.12)';
+  factBox.style.border = '2px solid var(--primary)';
+  factBox.style.borderRadius = '16px';
+  factBox.style.padding = '12px';
+  factBox.style.margin = '10px 0 15px 0';
   factBox.style.textAlign = 'left';
 
   let factTitle = document.createElement('h4');
-  factTitle.style.margin = '0 0 8px 0';
-  factTitle.style.color = isNewRecord ? '#ffd700' : '#00e5ff'; 
-  factTitle.style.fontSize = '1rem';
-  factTitle.textContent = isNewRecord ? '🥇 NEW BEST RECORD TIME!' : '🩺 HEALTH FACT REPORT';
+  factTitle.style.margin = '0 0 6px 0';
+  factTitle.style.color = isNewRecord ? '#ffd700' : 'var(--primary)'; 
+  factTitle.style.fontSize = '0.9rem';
+  factTitle.textContent = isNewRecord ? '🥇 NEW BEST RECORD!' : '🩺 HEALTH DATA ANALYSIS';
 
   let factContent = document.createElement('p');
-  factContent.style.color = '#e5e7eb';
-  factContent.style.fontSize = '0.85rem';
-  factContent.style.lineHeight = '1.5';
+  factContent.style.color = '#e2e8f0';
+  factContent.style.fontSize = '0.78rem';
+  factContent.style.lineHeight = '1.4';
   factContent.style.margin = '0';
 
   factBox.appendChild(factTitle);
   factBox.appendChild(factContent);
 
-  let timeNote = `<b style="color: #00ff66;">Your Clear Time: ${finalTimeFormatted}</b><br><br>`;
+  let timeNote = `<b style="color: #2ee575;">Quest Time: ${finalTimeFormatted}</b><br><br>`;
 
   if (runtime.currentLevel === 1) {
-    UI.title.textContent = "🎉 LEVEL 1 CLEARED!";
-    factContent.innerHTML = timeNote + "<b>Empty Calories:</b> Sugar provides instant energy but has 0 nutritional value. By actively jogging just now, you successfully burned off those empty calories before they turned into stored body fat!";
+    UI.title.textContent = "🎉 STAGE 1 CLEAR";
+    factContent.innerHTML = timeNote + "By actively running on the spot just now, you successfully burned off empty sugar calories before they could convert into unhealthy body fat storage!";
     runtime.currentLevel = 2;
-    UI.btn.textContent = "PROCEED TO LEVEL 2";
+    UI.btn.textContent = "ENTER LEVEL 2";
     UI.badge.textContent = `LEVEL 2`;
   } 
   else if (runtime.currentLevel === 2) {
-    UI.title.textContent = "🎉 LEVEL 2 CLEARED!";
-    factContent.innerHTML = timeNote + "<b>Insulin Resistance & Weight Gain:</b> Constant high sugar spikes force your pancreas to overproduce insulin. Over time, your cells become numb to it (insulin resistance), leading to fat storage, high blood pressure, and obesity!";
+    UI.title.textContent = "🎉 STAGE 2 CLEAR";
+    factContent.innerHTML = timeNote + "Constant blood sugar spikes can lead to insulin resistance. Regular active physical movement keeps your body cells sensitive and healthy!";
     runtime.currentLevel = 3;
-    UI.btn.textContent = "PROCEED TO LEVEL 3";
+    UI.btn.textContent = "ENTER LEVEL 3";
     UI.badge.textContent = `LEVEL 3`;
   } 
   else if (runtime.currentLevel === 3) {
-    UI.title.textContent = "🏆 VICTORY OVER DIABETES!";
-    factContent.innerHTML = timeNote + "<b>Chronic Diabetes Risk:</b> When insulin fails completely, sugar builds up in your blood, causing <b>Type 2 Diabetes</b>. This can lead to blindness, kidney failure, and nerve damage. Congratulations! Your active steps today prove that exercise is the ultimate shield against chronic health diseases!";
+    UI.title.textContent = "🏆 CHAMPION!";
+    factContent.innerHTML = timeNote + "Fantastic job! Maintaining an active workout routine drastically reduces chronic long-term Type-2 Diabetes risks. Keep moving!";
     runtime.currentLevel = 1;
-    UI.btn.textContent = "PLAY AGAIN";
+    UI.btn.textContent = "RESTART QUEST";
     UI.badge.textContent = `LEVEL 1`;
   }
 
-  UI.overlay.insertBefore(factBox, UI.btn);
+  card.insertBefore(factBox, UI.btn);
   displayCurrentLevelHighScore();
 
   setTimeout(() => {
