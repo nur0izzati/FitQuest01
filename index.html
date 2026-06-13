@@ -10,13 +10,15 @@
 
 <div id="game-container">
   <div id="field-decorations"></div>
+  
+  <div id="obstacles-layer"></div>
 
   <div id="overlay">
     <div class="menu-card">
       <h1 id="menu-title">✨ FITQUEST ✨</h1>
       <p class="menu-subtitle">Step Up, Burn Calories, Defeat Diabetes!</p>
       
-      <div class="setup-box interactive-panel">
+      <div class="setup-box interactive-panel" id="menu-setup-level">
         <h3>🌱 Select Stage Level</h3>
         <div class="level-arrow-container">
           <button class="arrow-btn" id="prev-lvl-btn" onclick="changeMenuLevel(-1)">⬅️</button>
@@ -26,7 +28,7 @@
         <div id="high-score-display">🥇 Best Time: --:--.--</div>
       </div>
 
-      <div class="setup-box interactive-panel">
+      <div class="setup-box interactive-panel" id="menu-setup-char">
         <h3>🎭 Select Character</h3>
         <div class="char-toggle-container">
           <button class="char-btn active-pink" id="btn-female" onclick="selectGender('female')">Female Hero</button>
@@ -34,21 +36,21 @@
         </div>
       </div>
       
-      <div class="how-to-play-box interactive-panel">
+      <div class="how-to-play-box interactive-panel" id="menu-instructions">
         <h3>🏃‍♂️ Mission Rules</h3>
         
         <div id="target-boss-preview">
           <div class="boss-avatar-frame"></div>
           <div class="boss-instruction-text">
             <b>TARGET ALERT:</b><br>
-            Find and crush the <span>Sugar Cube Boss</span> to burn away dangerous sweet calories!
+            Find and crush the <span>Sugar Cube</span> to burn away dangerous sweet calories!
           </div>
         </div>
 
         <ul>
           <li><b>Aim:</b> Hold and drag the virtual joystick on screen to aim your character.</li>
           <li><b>Run:</b> While aiming, physically <b>walk or jog on the spot</b> to speed forward.</li>
-          <li><b>Strike:</b> Follow the <b>flexible radar arrow</b> to find the Boss, then <b>shake your phone</b> firmly to attack!</li>
+          <li><b>Strike:</b> Follow the <b>flexible radar arrow</b> to find the Sugar Cube, then <b>shake your phone</b> firmly to attack!</li>
         </ul>
       </div>
 
@@ -59,7 +61,9 @@
         </p>
       </div>
 
-      <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
+      <div id="menu-actions-container" style="width: 100%;">
+        <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
+      </div>
     </div>
   </div>
 
@@ -90,7 +94,7 @@
       </div>
 
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">😈 Boss Health</div>
+        <div class="hp-label">😈 Sugar Cube Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
