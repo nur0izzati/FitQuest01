@@ -56,7 +56,7 @@ let runtime = {
   ex: 1200, ey: 1200,
   powerupX: 0, powerupY: 0,
   isPowerupSpawned: false,
-  isBossShieldBroken: false, // Core mechanics state
+  isBossShieldBroken: false,
   
   // Health states
   playerMaxHp: 100, playerHp: 100,
@@ -129,7 +129,6 @@ function selectGender(gender) {
 // VIRTUAL JOYSTICK & HARDWARE ACCELERATION
 // ==========================================
 function setupInputControllers() {
-  // Joystick Touch Binding
   UI.joyBoundary.addEventListener('touchstart', (e) => {
     runtime.isJoyActive = true;
     updateJoystickTracking(e.touches[0]);
@@ -146,9 +145,8 @@ function setupInputControllers() {
     UI.joyStick.style.transform = `translate(0px, 0px)`;
   });
 
-  // Motion Detection Hook
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    // iOS Device Trigger Requirement handled in igniteEngine()
+    // Handled explicitly during ignition click
   } else {
     window.addEventListener('devicemotion', handleHardwareAccelerationData);
   }
@@ -170,8 +168,6 @@ function updateJoystickTracking(touchPoint) {
   }
 
   UI.joyStick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-  
-  // Normalize values between -1 and 1
   runtime.joyX = deltaX / maxRadius;
   runtime.joyY = deltaY / maxRadius;
 }
@@ -183,7 +179,7 @@ function handleHardwareAccelerationData(event) {
   if (!accel) return;
 
   const now = Date.now();
-  if (now - runtime.lastAccelTime < 80) return; // Debounce rate throttle
+  if (now - runtime.lastAccelTime < 80) return; 
   runtime.lastAccelTime = now;
 
   const x = accel.x || 0;
@@ -191,17 +187,14 @@ function handleHardwareAccelerationData(event) {
   const z = accel.z || 0;
   const magnitude = Math.sqrt(x * x + y * y + z * z);
 
-  // 1. Shake To Strike Mechanic (Fires when near boss)
   if (magnitude > CONFIG.shakeThreshold) {
     evaluatePlayerAttackAction();
   }
 
-  // 2. Physical Step Engine (Checks if player is stepping on spot)
   if (magnitude > CONFIG.stepThreshold) {
     runtime.isPhysicallyMoving = true;
     runtime.stepFrequency = magnitude;
   } else {
-    // Smoothly decay acceleration force back to idle
     runtime.stepFrequency *= 0.85;
     if (runtime.stepFrequency < 2) runtime.isPhysicallyMoving = false;
   }
@@ -211,7 +204,6 @@ function handleHardwareAccelerationData(event) {
 // GAME ENGINE INIT & ENVIRONMENT SPAWNING
 // ==========================================
 function igniteEngine() {
-  // Trigger iOS motion authorization security layer if required
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission()
       .then(permissionState => {
@@ -224,21 +216,17 @@ function igniteEngine() {
   UI.overlay.style.display = 'none';
   runtime.isGameRunning = true;
   
-  // Setup level attributes
   const settings = STAGES[runtime.activeLevel];
   runtime.bossMaxHp = settings.bossHp;
   runtime.bossHp = settings.bossHp;
   runtime.playerHp = runtime.playerMaxHp;
   
-  // Reset character positions
   runtime.px = 200; runtime.py = 200;
   runtime.ex = 1200; runtime.ey = 1200;
   
-  // Core mechanics reset
   runtime.isBossShieldBroken = false;
-  UI.enemy.classList.add('shielded'); // Activate white shield visibility
+  UI.enemy.classList.add('shielded'); 
   
-  // Spawn Apple far away from player
   runtime.powerupX = 750;
   runtime.powerupY = 750;
   runtime.isPowerupSpawned = true;
@@ -249,7 +237,6 @@ function igniteEngine() {
   
   buildEnvironmentLayout(settings.spawnWalls);
 
-  // Fire Game Timers
   runtime.gameStartTime = Date.now();
   runtime.elapsedTime = 0;
   runtime.timerInterval = setInterval(() => {
@@ -259,7 +246,6 @@ function igniteEngine() {
 
   UI.statusMsg.innerText = "🛡️ Boss is Immune! Grab the Golden Apple!";
   
-  // Kick off frame processing loop
   requestAnimationFrame(processFrameIteration);
 }
 
@@ -269,7 +255,6 @@ function buildEnvironmentLayout(wallCount) {
   runtime.walls = [];
   runtime.puddles = [];
 
-  // 1. Spawn Obstacle Bars
   for (let i = 0; i < wallCount; i++) {
     const w = 120 + Math.random() * 160;
     const h = 50;
@@ -287,10 +272,8 @@ function buildEnvironmentLayout(wallCount) {
     runtime.walls.push({ x, y, width: w, height: h });
   }
 
-  // 2. FOCUS CRITICAL STICKY PUDDLES IN CENTER OF MAP
   const puddleCount = 4 + runtime.activeLevel;
   for (let i = 0; i < puddleCount; i++) {
-    // Clustered tightly around the physical map center (750, 750)
     const x = 550 + Math.random() * 400;
     const y = 550 + Math.random() * 400;
 
@@ -310,7 +293,6 @@ function buildEnvironmentLayout(wallCount) {
 function processFrameIteration() {
   if (!runtime.isGameRunning) return;
 
-  // 1. Process Physical Step Speeds & Mud Slowdowns
   let isInsideMud = false;
   for (let puddle of runtime.puddles) {
     const dx = runtime.px - puddle.x;
@@ -321,7 +303,6 @@ function processFrameIteration() {
     }
   }
 
-  // Apply mud speed penalty profile
   let movementVelocity = CONFIG.player.baseSpeed;
   if (isInsideMud) {
     movementVelocity = CONFIG.player.slowSpeed;
@@ -331,7 +312,6 @@ function processFrameIteration() {
     UI.player.classList.remove('sticky-slow');
   }
 
-  // 2. Execute Movement Physics
   if (runtime.isJoyActive && runtime.isPhysicallyMoving) {
     const oldX = runtime.px;
     const oldY = runtime.py;
@@ -339,7 +319,6 @@ function processFrameIteration() {
     runtime.px += runtime.joyX * movementVelocity;
     runtime.py += runtime.joyY * movementVelocity;
 
-    // Apply Wall Blockades
     for (let wall of runtime.walls) {
       if (runtime.px + CONFIG.player.radius > wall.x && runtime.px - CONFIG.player.radius < wall.x + wall.width &&
           runtime.py + CONFIG.player.radius > wall.y && runtime.py - CONFIG.player.radius < wall.y + wall.height) {
@@ -349,7 +328,6 @@ function processFrameIteration() {
       }
     }
 
-    // Canvas boundary clamping
     runtime.px = Math.max(CONFIG.player.radius, Math.min(CONFIG.world.width - CONFIG.player.radius, runtime.px));
     runtime.py = Math.max(CONFIG.player.radius, Math.min(CONFIG.world.height - CONFIG.player.radius, runtime.py));
 
@@ -363,7 +341,6 @@ function processFrameIteration() {
     }
   }
 
-  // 3. Evaluate Apple Collection Logic
   if (runtime.isPowerupSpawned) {
     const dx = runtime.px - runtime.powerupX;
     const dy = runtime.py - runtime.powerupY;
@@ -371,12 +348,11 @@ function processFrameIteration() {
       runtime.isPowerupSpawned = false;
       runtime.isBossShieldBroken = true;
       UI.powerup.style.display = 'none';
-      UI.enemy.classList.remove('shielded'); // Drop shield glow effect
+      UI.enemy.classList.remove('shielded'); 
       UI.statusMsg.innerText = "🔓 Shield Shattered! Go Strike the Sugar Cube!";
     }
   }
 
-  // 4. Update Screen Rendering Contexts
   adaptViewportClamping();
   processRadarPointer();
 
@@ -384,13 +360,12 @@ function processFrameIteration() {
 }
 
 function processSpriteSheetRotation() {
-  // Map angle orientation to direction state arrays
   const angle = Math.atan2(runtime.joyY, runtime.joyX) * (180 / Math.PI);
   
-  if (angle >= -45 && angle <= 45) runtime.facingDirectionRow = 2;       // Right row
-  else if (angle > 45 && angle < 135) runtime.facingDirectionRow = 0;    // Down row
-  else if (angle >= 135 || angle <= -135) runtime.facingDirectionRow = 1; // Left row
-  else runtime.facingDirectionRow = 3;                                  // Up row
+  if (angle >= -45 && angle <= 45) runtime.facingDirectionRow = 2;       
+  else if (angle > 45 && angle < 135) runtime.facingDirectionRow = 0;    
+  else if (angle >= 135 || angle <= -135) runtime.facingDirectionRow = 1; 
+  else runtime.facingDirectionRow = 3;                                  
 
   runtime.animationTickCounter++;
   if (runtime.animationTickCounter > 6) {
@@ -404,7 +379,6 @@ function processSpriteSheetRotation() {
 }
 
 function processRadarPointer() {
-  // If shield is up, point to the Apple; if shield is broken, point to the Boss
   let targetX = runtime.isBossShieldBroken ? runtime.ex : runtime.powerupX;
   let targetY = runtime.isBossShieldBroken ? runtime.ey : runtime.powerupY;
 
@@ -422,7 +396,6 @@ function processRadarPointer() {
 }
 
 function adaptViewportClamping() {
-  // Center screen focus smoothly around player coordinates
   const viewW = window.innerWidth;
   const viewH = window.innerHeight;
 
@@ -432,7 +405,6 @@ function adaptViewportClamping() {
   camX = Math.max(0, Math.min(CONFIG.world.width - viewW, camX));
   camY = Math.max(0, Math.min(CONFIG.world.height - viewH, camY));
 
-  // Render updates relative to active viewport camera offsets
   UI.player.style.left = `${runtime.px - 50}px`;
   UI.player.style.top = `${runtime.py - 50}px`;
 
@@ -444,7 +416,9 @@ function adaptViewportClamping() {
     UI.powerup.style.top = `${runtime.powerupY - 25}px`;
   }
 
+  // FIX: Moves the background image tiling inversely with camera view matrix scrolls
   document.getElementById('game-container').style.backgroundPosition = `${-camX}px ${-camY}px`;
+  
   UI.obstaclesLayer.style.transform = `translate(${-camX}px, ${-camY}px)`;
   UI.decorationsLayer.style.transform = `translate(${-camX}px, ${-camY}px)`;
   UI.player.style.transform = `translate(${-camX}px, ${-camY}px)`;
@@ -460,16 +434,12 @@ function evaluatePlayerAttackAction() {
   const dy = runtime.py - runtime.ey;
   const distance = Math.sqrt(dx*dx + dy*dy);
 
-  // Must be in strike zone near boss to trigger attack evaluation
   if (distance < CONFIG.player.radius + CONFIG.boss.radius + 40) {
-    
-    // GUARD CHECK: Refuse damage calculations if shield is unbroken
     if (!runtime.isBossShieldBroken) {
       UI.statusMsg.innerText = "❌ IMMUNE! Shield blocks your strike! Grab Apple!";
       return;
     }
 
-    // Process valid strike damage
     runtime.bossHp -= 15;
     UI.enemy.classList.add('attack-pulse');
     UI.statusMsg.innerText = `💥 SMASHED! Boss lost 15 HP!`;
@@ -500,7 +470,6 @@ function terminateGameLoopContext(isVictory) {
     UI.menuTitle.innerText = "🎉 QUEST CLEAR! 🎉";
     UI.menuSubtitle.innerText = `You burned away the glucose in ${formatTimeOutput(runtime.elapsedTime)}!`;
     
-    // Save record tracking score inside local database profiles
     const historicalBest = localStorage.getItem(`fitquest_lvl_${runtime.activeLevel}`);
     if (!historicalBest || runtime.elapsedTime < parseInt(historicalBest, 10)) {
       localStorage.setItem(`fitquest_lvl_${runtime.activeLevel}`, runtime.elapsedTime.toString());
