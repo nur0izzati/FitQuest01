@@ -9,15 +9,19 @@
 <body>
 
 <div id="game-container">
+  <!-- LAPISAN LATAR BELAKANG PADANG (Kini dikosongkan daripada emoji bunga tiruan) -->
   <div id="field-decorations"></div>
   
+  <!-- LAPISAN HALANGAN PEPEJAL (DINDING COKLAT) -->
   <div id="obstacles-layer"></div>
 
+  <!-- START MENU / INTERACTIVE OVERLAY (KAWAII UI) -->
   <div id="overlay">
     <div class="menu-card">
       <h1 id="menu-title">✨ FITQUEST ✨</h1>
       <p class="menu-subtitle">Step Up, Burn Calories, Defeat Diabetes!</p>
       
+      <!-- LEVEL SELECTOR BOX -->
       <div class="setup-box interactive-panel" id="menu-setup-level">
         <h3>🌱 Select Stage Level</h3>
         <div class="level-arrow-container">
@@ -28,6 +32,7 @@
         <div id="high-score-display">🥇 Best Time: --:--.--</div>
       </div>
 
+      <!-- Character Toggle Box -->
       <div class="setup-box interactive-panel" id="menu-setup-char">
         <h3>🎭 Select Character</h3>
         <div class="char-toggle-container">
@@ -36,6 +41,7 @@
         </div>
       </div>
       
+      <!-- HOW TO PLAY BOX -->
       <div class="how-to-play-box interactive-panel" id="menu-instructions">
         <h3>🏃‍♂️ Mission Rules</h3>
         
@@ -61,12 +67,14 @@
         </p>
       </div>
 
+      <!-- CONTAINER UNTUK BUTANG DINAMIK -->
       <div id="menu-actions-container" style="width: 100%;">
         <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
       </div>
     </div>
   </div>
 
+  <!-- GAMEPLAY CHARACTERS & RADAR -->
   <div id="player">
     <div id="nav-arrow">
       <div class="arrow-stem"></div>
@@ -77,10 +85,12 @@
   <div id="enemy"></div>
   <div id="powerup-item" class="float-item"></div>
 
+  <!-- JOYSTICK LAYER -->
   <div id="joy-boundary">
     <div id="joy-stick"></div>
   </div>
 
+  <!-- GAME HUD LAYER -->
   <div id="ui-layer">
     <div class="top-bar">
       <div class="hp-housing">
@@ -106,7 +116,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
 <script src="game.js"></script>
 
 </body>
