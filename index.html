@@ -9,57 +9,65 @@
 <body>
 
 <div id="game-container">
-  <div id="overlay">
-    <h1 id="menu-title">FITQUEST</h1>
-    
-    <div class="setup-box">
-      <h3>Select Stage Level</h3>
-      <div class="level-arrow-container">
-        <button class="arrow-btn" id="prev-lvl-btn" onclick="changeMenuLevel(-1)">⬅️</button>
-        <span id="menu-level-display">LEVEL 1</span>
-        <button class="arrow-btn" id="next-lvl-btn" onclick="changeMenuLevel(1)">➡️</button>
-      </div>
-      <div id="high-score-display">🥇 Best Time: --:--.--</div>
-    </div>
+  <div id="field-decorations"></div>
 
-    <div class="setup-box">
-      <h3>Select Character</h3>
-      <div class="char-toggle-container">
-        <button class="char-btn active" id="btn-female" onclick="selectGender('female')">Female</button>
-        <button class="char-btn" id="btn-male" onclick="selectGender('male')">Male</button>
-      </div>
-    </div>
-    
-    <div class="how-to-play-box">
-      <h3>🏃‍♂️ How To Play</h3>
+  <div id="overlay">
+    <div class="menu-card">
+      <h1 id="menu-title">✨ FITQUEST ✨</h1>
+      <p class="menu-subtitle">Step Up, Burn Calories, Defeat Diabetes!</p>
       
-      <div id="target-boss-preview">
-        <div class="boss-avatar-frame"></div>
-        <div class="boss-instruction-text">
-          <b>MISSION TARGET:</b><br>
-          Find and attack the <span>Sugar Cube Boss</span> to destroy the excess sugar calories!
+      <div class="setup-box interactive-panel">
+        <h3>🌱 Select Stage Level</h3>
+        <div class="level-arrow-container">
+          <button class="arrow-btn" id="prev-lvl-btn" onclick="changeMenuLevel(-1)">⬅️</button>
+          <span id="menu-level-display">LEVEL 1</span>
+          <button class="arrow-btn" id="next-lvl-btn" onclick="changeMenuLevel(1)">➡️</button>
+        </div>
+        <div id="high-score-display">🥇 Best Time: --:--.--</div>
+      </div>
+
+      <div class="setup-box interactive-panel">
+        <h3>🎭 Select Character</h3>
+        <div class="char-toggle-container">
+          <button class="char-btn active-pink" id="btn-female" onclick="selectGender('female')">Female Hero</button>
+          <button class="char-btn" id="btn-male" onclick="selectGender('male')">Male Hero</button>
         </div>
       </div>
+      
+      <div class="how-to-play-box interactive-panel">
+        <h3>🏃‍♂️ Mission Rules</h3>
+        
+        <div id="target-boss-preview">
+          <div class="boss-avatar-frame"></div>
+          <div class="boss-instruction-text">
+            <b>TARGET ALERT:</b><br>
+            Find and crush the <span>Sugar Cube Boss</span> to burn away dangerous sweet calories!
+          </div>
+        </div>
 
-      <ul>
-        <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick on the screen to aim your character in a direction. <i>(Note: Joystick alone will not move you!)</i></li>
-        <li><b>Step 2 (Move):</b> While holding the joystick, physically **walk or jog on the spot** to make your character run forward.</li>
-        <li><b>Step 3 (Attack):</b> Follow the <b>navigation arrow</b> to find the Boss, get close, and firmly **shake your phone** to strike!</li>
-      </ul>
+        <ul>
+          <li><b>Aim:</b> Hold and drag the virtual joystick on screen to aim your character.</li>
+          <li><b>Run:</b> While aiming, physically <b>walk or jog on the spot</b> to speed forward.</li>
+          <li><b>Strike:</b> Follow the <b>flexible radar arrow</b> to find the Boss, then <b>shake your phone</b> firmly to attack!</li>
+        </ul>
+      </div>
+
+      <div class="safety-warning-box" id="safety-box">
+        <b style="color: #ff4d6d; text-transform: uppercase; font-size: 0.85rem;">⚠️ Safety First:</b>
+        <p style="color: #e2e8f0; margin: 4px 0 0 0; font-size: 0.8rem; line-height: 1.4;">
+          Check your real-world surroundings! Ensure your floor is flat and free of objects that can trip you.
+        </p>
+      </div>
+
+      <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
     </div>
-
-    <div class="safety-warning-box" id="safety-box">
-      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ Safety Warning:</b>
-      <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
-        Please make sure your real-world surroundings are entirely clear. <b>DO NOT</b> play near roads, steps, or tight spaces that could cause you to trip or fall!
-      </p>
-    </div>
-
-    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START GAME</button>
   </div>
 
   <div id="player">
-    <div id="nav-arrow">➡️</div>
+    <div id="nav-arrow">
+      <div class="arrow-stem"></div>
+      <div class="arrow-head"></div>
+    </div>
   </div>
   
   <div id="enemy"></div>
@@ -72,7 +80,7 @@
   <div id="ui-layer">
     <div class="top-bar">
       <div class="hp-housing">
-        <div class="hp-label">Hero Energy</div>
+        <div class="hp-label">💚 Hero Energy</div>
         <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
       </div>
       
@@ -82,7 +90,7 @@
       </div>
 
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Boss Health</div>
+        <div class="hp-label">😈 Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
