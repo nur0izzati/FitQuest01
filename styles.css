@@ -27,15 +27,16 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  /* PERUBAHAN: Menyokong fail gambar background.png baharu, dipadankan dengan warna padang jika fail belum dimuat naik */
-  background-image: url('background.png');
+  /* KEMASKINI: Menggunakan gambar dari folder assets */
+  background-image: url('assets/background.png');
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   background-color: #5cba5c;
   overflow: hidden;
 }
 
-/* SISTEM BLOK HALANGAN PEPEJAL DINDING COKLAT (BARU) */
+/* SISTEM BLOK HALANGAN PEPEJAL DINDING COKLAT */
 .chocolate-wall {
   position: absolute;
   background: linear-gradient(135deg, #5c3a21 0%, #402613 100%);
@@ -44,7 +45,6 @@ body {
   box-shadow: inset 0 0 12px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.3);
   z-index: 4;
 }
-/* Corak petak bar coklat kecil di dalam dinding */
 .chocolate-wall::before {
   content: '';
   position: absolute;
