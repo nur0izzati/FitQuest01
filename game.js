@@ -167,7 +167,6 @@ function playSoundFX(type) {
   }
 }
 
-// KEMASKINI: Dikosongkan sepenuhnya supaya bunga emoji tidak menindih gambar background asli anda!
 function generateProceduralFieldDecorations() {
   UI.decorationsContainer.innerHTML = ''; 
 }
@@ -188,7 +187,6 @@ function generateChocolateObstacles() {
     blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
   } 
   else if (runtime.currentLevel === 3) {
-    // Dinding bar coklat distruktur semula sedikit agar tidak terlalu rapat ke siling/lantai telefon
     blueprint.push({ x: mapW * 0.2, y: mapH * 0.23, w: mapW * 0.6, h: 35 });
     blueprint.push({ x: mapW * 0.08, y: mapH * 0.55, w: mapW * 0.42, h: 35 });
     blueprint.push({ x: mapW * 0.62, y: mapH * 0.55, w: mapW * 0.3, h: 35 });
@@ -210,7 +208,6 @@ function generateChocolateObstacles() {
   });
 }
 
-// KEMASKINI: Saiz hitbox kolisi dikecilkan (daripada 50px ke 24px) supaya hero senang meloloskan diri di lorong sempit level 3
 function checkPlayerWallCollisions(nextX, nextY) {
   let hitboxSize = 24; 
   let pLeft = nextX + 38; 
@@ -250,6 +247,15 @@ function displayCurrentLevelHighScore() {
     UI.highScoreDisplay.textContent = `🥇 Best Time: ${formatTime(parseInt(savedScore))}`;
   } else {
     UI.highScoreDisplay.textContent = `🥇 Best Time: --:--.--`;
+  }
+}
+
+// FUNGSI BARU: Padamkan rekod skor lama dari memori telefon/pelayar jika butang tong sampah ditekan
+function wipeCurrentLevelScore() {
+  let konfirmasi = confirm(`Adakah anda pasti mahu memadamkan rekod Best Time untuk Level ${runtime.currentLevel}?`);
+  if (konfirmasi) {
+    localStorage.removeItem(`fitquest_lvl_${runtime.currentLevel}`);
+    displayCurrentLevelHighScore();
   }
 }
 
@@ -706,7 +712,7 @@ function processCombatStrike() {
     UI.eFill.style.width = `${runtime.eHP}%`;
     UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
     updateSugarBossScale();
-    UI.status.textContent = `💥 HIT! Sugar Cube: ${runtime.eHP}%`;
+    UI.status.textContent = `💥 HIT! Sugar Energy: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
     playSoundFX('hit_boss'); 
 
