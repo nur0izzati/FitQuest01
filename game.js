@@ -1,494 +1,586 @@
-// ==========================================
-// FITQUEST ENGINE - CORE GAME DATA & LAYOUTS
-// ==========================================
-const CONFIG = {
-  world: { width: 1500, height: 1500 },
-  player: { baseSpeed: 5.5, slowSpeed: 2.2, radius: 24 },
-  boss: { radius: 45 },
-  powerup: { radius: 22 },
-  puddle: { radius: 35 },
-  stepThreshold: 11.8,
-  shakeThreshold: 14.5
-};
+// --- FITQUEST GAME ENGINE REGISTRATION & STATE ---
+let currentLevel = 1;
+let highScore = parseFloat(localStorage.getItem('fitquest_highscore')) || 0;
+let gameActive = false;
+let gameTimer = 0;
+let timerInterval = null;
 
-const STAGES = {
-  1: { bossHp: 100, spawnWalls: 4, label: "Level 1: Sugar Shock" },
-  2: { bossHp: 175, spawnWalls: 7, label: "Level 2: Calorie Chaos" },
-  3: { bossHp: 260, spawnWalls: 11, label: "Level 3: Diabetes Defeated" }
-};
+// Player & Boss Entities State
+let playerX = 100;
+let playerY = 300;
+let playerSpeed = 5;
+let playerHp = 100;
+let isStickyMultiplier = 1.0;
 
-const UI = {
-  overlay: document.getElementById('overlay'),
-  menuTitle: document.getElementById('menu-title'),
-  menuSubtitle: document.querySelector('.menu-subtitle'),
-  levelDisplay: document.getElementById('menu-level-display'),
-  highScore: document.getElementById('high-score-display'),
-  actionBtn: document.getElementById('action-btn'),
-  playerFill: document.getElementById('p-fill'),
-  enemyFill: document.getElementById('e-fill'),
-  levelBadge: document.getElementById('level-badge'),
-  timerBadge: document.getElementById('timer-badge'),
-  statusMsg: document.getElementById('status-msg'),
-  motionDisplay: document.getElementById('motion-display'),
-  player: document.getElementById('player'),
-  enemy: document.getElementById('enemy'),
-  powerup: document.getElementById('powerup-item'),
-  arrow: document.getElementById('nav-arrow'),
-  decorationsLayer: document.getElementById('field-decorations'),
-  obstaclesLayer: document.getElementById('obstacles-layer'),
-  joyBoundary: document.getElementById('joy-boundary'),
-  joyStick: document.getElementById('joy-stick'),
-  btnFemale: document.getElementById('btn-female'),
-  btnMale: document.getElementById('btn-male')
-};
+let enemyX = 600;
+let enemyY = 300;
+let enemyHp = 100;
+let enemyShieldActive = true;
+let bossCanAttack = false;
 
-// Engine runtime state
-let runtime = {
-  activeLevel: 1,
-  selectedGender: 'female',
-  isGameRunning: false,
-  timerInterval: null,
-  gameStartTime: 0,
-  elapsedTime: 0,
-  
-  // Entity positions
-  px: 150, py: 150,
-  ex: 1200, ey: 1200,
-  powerupX: 0, powerupY: 0,
-  isPowerupSpawned: false,
-  isBossShieldBroken: false,
-  
-  // Health states
-  playerMaxHp: 100, playerHp: 100,
-  bossMaxHp: 100, bossHp: 100,
-  
-  // Input tracking
-  joyX: 0, joyY: 0,
-  isJoyActive: false,
-  isPhysicallyMoving: false,
-  stepFrequency: 0,
-  lastAccelTime: 0,
-  
-  // Sprite animation state
-  currentFrameIndex: 0,
-  animationTickCounter: 0,
-  facingDirectionRow: 0, // 0=down, 1=left, 2=right, 3=up
-  
-  walls: [],
-  puddles: []
-};
+// Virtual Joystick State
+let joystickActive = false;
+let joyStartX = 0;
+let joyStartY = 0;
+let moveDirX = 0;
+let moveDirY = 0;
+const maxJoystickDistance = 40;
 
-// ==========================================
-// SYSTEM LIFE CYCLE & CONFIGURATION HOOKS
-// ==========================================
+// Fitness/Movement Mechanics Tracking
+let stepRate = 0.0;
+let lastAcceleration = { x: 0, y: 0, z: 0 };
+let shakeThreshold = 15; 
+let bossProjectileInterval = null;
+
+// Cache DOM elements
+const overlay = document.getElementById('overlay');
+const levelValueDisplay = document.getElementById('level-value');
+const highScoreDisplay = document.getElementById('high-score-display');
+const startBtn = document.getElementById('start-btn');
+const prevLevelBtn = document.getElementById('prev-lvl');
+const nextLevelBtn = document.getElementById('next-lvl');
+const resetScoreBtn = document.getElementById('reset-score');
+
+const playerEl = document.getElementById('player');
+const enemyEl = document.getElementById('enemy');
+const powerupEl = document.getElementById('powerup-item');
+const navArrowEl = document.getElementById('nav-arrow');
+const statusMsg = document.getElementById('status-msg');
+
+const pFill = document.getElementById('p-fill');
+const eFill = document.getElementById('e-fill');
+const timerBadge = document.getElementById('timer-badge');
+const levelBadge = document.getElementById('level-badge');
+
+const joyBoundary = document.getElementById('joy-boundary');
+const joyStick = document.getElementById('joy-stick');
+
+// --- 1. INITIALIZATION & MENU EVENT LISTENERS ---
 window.addEventListener('DOMContentLoaded', () => {
-  loadStageHighScores();
-  setupInputControllers();
-  window.addEventListener('resize', adaptViewportClamping);
-});
-
-function loadStageHighScores() {
-  const saved = localStorage.getItem(`fitquest_lvl_${runtime.activeLevel}`);
-  if (saved) {
-    const ms = parseInt(saved, 10);
-    UI.highScore.innerText = `🥇 Best Time: ${formatTimeOutput(ms)}`;
-  } else {
-    UI.highScore.innerText = `🥇 Best Time: --:--.--`;
-  }
-}
-
-function changeMenuLevel(direction) {
-  if (runtime.isGameRunning) return;
-  runtime.activeLevel += direction;
-  if (runtime.activeLevel < 1) runtime.activeLevel = 3;
-  if (runtime.activeLevel > 3) runtime.activeLevel = 1;
+  // Setup display defaults from storage
+  highScoreDisplay.textContent = highScore > 0 ? `Best Time: ${highScore.toFixed(2)}s` : "Best Time: 00:00";
   
-  UI.levelDisplay.innerText = `LEVEL ${runtime.activeLevel}`;
-  loadStageHighScores();
-}
-
-function wipeCurrentLevelScore() {
-  localStorage.removeItem(`fitquest_lvl_${runtime.activeLevel}`);
-  loadStageHighScores();
-}
-
-function selectGender(gender) {
-  runtime.selectedGender = gender;
-  if (gender === 'female') {
-    UI.btnFemale.classList.add('active-pink');
-    UI.btnMale.classList.remove('active-pink');
-    UI.player.style.backgroundImage = "url('assets/hero-sprite.png')";
-  } else {
-    UI.btnMale.classList.add('active-pink');
-    UI.btnFemale.classList.remove('active-pink');
-    UI.player.style.backgroundImage = "url('assets/hero-sprite2.png')";
-  }
-}
-
-// ==========================================
-// VIRTUAL JOYSTICK & HARDWARE ACCELERATION
-// ==========================================
-function setupInputControllers() {
-  UI.joyBoundary.addEventListener('touchstart', (e) => {
-    runtime.isJoyActive = true;
-    updateJoystickTracking(e.touches[0]);
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (!runtime.isJoyActive) return;
-    updateJoystickTracking(e.touches[0]);
-  }, { passive: true });
-
-  window.addEventListener('touchend', () => {
-    runtime.isJoyActive = false;
-    runtime.joyX = 0; runtime.joyY = 0;
-    UI.joyStick.style.transform = `translate(0px, 0px)`;
+  // Level Selector Arrow Buttons
+  prevLevelBtn.addEventListener('click', () => {
+    if (currentLevel > 1) {
+      currentLevel--;
+      updateMenuUI();
+    }
   });
 
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    // Handled explicitly during ignition click
-  } else {
-    window.addEventListener('devicemotion', handleHardwareAccelerationData);
-  }
+  nextLevelBtn.addEventListener('click', () => {
+    if (currentLevel < 3) {
+      currentLevel++;
+      updateMenuUI();
+    }
+  });
+
+  // Reset Highscore Button
+  resetScoreBtn.addEventListener('click', () => {
+    localStorage.removeItem('fitquest_highscore');
+    highScore = 0;
+    highScoreDisplay.textContent = "Best Time: 00:00";
+  });
+
+  // Character Toggle Buttons (Cosmetic Customization Interaction)
+  const charBtns = document.querySelectorAll('.char-btn');
+  charBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      charBtns.forEach(b => b.classList.remove('active-pink'));
+      btn.classList.add('active-pink');
+      if(btn.id === 'char-male') {
+        playerEl.style.backgroundImage = "url('assets/hero-sprite2.png')";
+      } else {
+        playerEl.style.backgroundImage = "url('assets/hero-sprite.png')";
+      }
+    });
+  });
+
+  // Main CTA Start Game Trigger
+  startBtn.addEventListener('click', startGame);
+  
+  // Setup Mobile Web Sensor Mechanics (Accelerometer)
+  initMotionSensors();
+  setupJoystickInput();
+});
+
+function updateMenuUI() {
+  levelValueDisplay.textContent = `LEVEL ${currentLevel}`;
 }
 
-function updateJoystickTracking(touchPoint) {
-  const rect = UI.joyBoundary.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
+// --- 2. THE CHOSEN CORE ENGINE LAYOUT: LEVEL CONFIGURATIONS ---
+function setupGameStageLayout(level) {
+  console.log(`Loading system configuration for FitQuest Level ${level}...`);
   
-  let deltaX = touchPoint.clientX - centerX;
-  let deltaY = touchPoint.clientY - centerY;
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-  const maxRadius = rect.width / 2;
-
-  if (distance > maxRadius) {
-    deltaX = (deltaX / distance) * maxRadius;
-    deltaY = (deltaY / distance) * maxRadius;
-  }
-
-  UI.joyStick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-  runtime.joyX = deltaX / maxRadius;
-  runtime.joyY = deltaY / maxRadius;
-}
-
-function handleHardwareAccelerationData(event) {
-  if (!runtime.isGameRunning) return;
-
-  const accel = event.accelerationIncludingGravity || event.acceleration;
-  if (!accel) return;
-
-  const now = Date.now();
-  if (now - runtime.lastAccelTime < 80) return; 
-  runtime.lastAccelTime = now;
-
-  const x = accel.x || 0;
-  const y = accel.y || 0;
-  const z = accel.z || 0;
-  const magnitude = Math.sqrt(x * x + y * y + z * z);
-
-  if (magnitude > CONFIG.shakeThreshold) {
-    evaluatePlayerAttackAction();
-  }
-
-  if (magnitude > CONFIG.stepThreshold) {
-    runtime.isPhysicallyMoving = true;
-    runtime.stepFrequency = magnitude;
-  } else {
-    runtime.stepFrequency *= 0.85;
-    if (runtime.stepFrequency < 2) runtime.isPhysicallyMoving = false;
-  }
-}
-
-// ==========================================
-// GAME ENGINE INIT & ENVIRONMENT SPAWNING
-// ==========================================
-function igniteEngine() {
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    DeviceMotionEvent.requestPermission()
-      .then(permissionState => {
-        if (permissionState === 'granted') {
-          window.addEventListener('devicemotion', handleHardwareAccelerationData);
-        }
-      }).catch(console.error);
-  }
-
-  UI.overlay.style.display = 'none';
-  runtime.isGameRunning = true;
+  // Reset clean scene vectors
+  const obstaclesLayer = document.getElementById('game-container');
   
-  const settings = STAGES[runtime.activeLevel];
-  runtime.bossMaxHp = settings.bossHp;
-  runtime.bossHp = settings.bossHp;
-  runtime.playerHp = runtime.playerMaxHp;
+  // Remove any previously spawned dynamic obstacles or puddles
+  document.querySelectorAll('.chocolate-wall, .sugar-puddle, .sugar-glob').forEach(el => el.remove());
   
-  runtime.px = 200; runtime.py = 200;
-  runtime.ex = 1200; runtime.ey = 1200;
+  // Default values reset
+  isStickyMultiplier = 1.0;
+  playerEl.classList.remove('sticky-slow');
+  enemyShieldActive = true;
+  enemyEl.classList.add('shielded');
+  powerupEl.style.display = 'block';
   
-  runtime.isBossShieldBroken = false;
-  UI.enemy.classList.add('shielded'); 
-  
-  runtime.powerupX = 750;
-  runtime.powerupY = 750;
-  runtime.isPowerupSpawned = true;
-  UI.powerup.style.display = 'block';
+  // Randomize Apple spawn coordinate placement 
+  spawnPowerupApple();
 
-  UI.levelBadge.innerText = `LEVEL ${runtime.activeLevel}`;
-  updateHealthBars();
-  
-  buildEnvironmentLayout(settings.spawnWalls);
+  // Clear existing projectile timers
+  if (bossProjectileInterval) clearInterval(bossProjectileInterval);
 
-  runtime.gameStartTime = Date.now();
-  runtime.elapsedTime = 0;
-  runtime.timerInterval = setInterval(() => {
-    runtime.elapsedTime = Date.now() - runtime.gameStartTime;
-    UI.timerBadge.innerText = `⏱️ ${formatTimeOutput(runtime.elapsedTime)}`;
-  }, 33);
-
-  UI.statusMsg.innerText = "🛡️ Boss is Immune! Grab the Golden Apple!";
-  
-  requestAnimationFrame(processFrameIteration);
-}
-
-function buildEnvironmentLayout(wallCount) {
-  UI.obstaclesLayer.innerHTML = '';
-  UI.decorationsLayer.innerHTML = '';
-  runtime.walls = [];
-  runtime.puddles = [];
-
-  for (let i = 0; i < wallCount; i++) {
-    const w = 120 + Math.random() * 160;
-    const h = 50;
-    const x = 300 + Math.random() * (CONFIG.world.width - 500);
-    const y = 300 + Math.random() * (CONFIG.world.height - 500);
-
-    const el = document.createElement('div');
-    el.className = 'chocolate-wall';
-    el.style.width = `${w}px`;
-    el.style.height = `${h}px`;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    UI.obstaclesLayer.appendChild(el);
-
-    runtime.walls.push({ x, y, width: w, height: h });
-  }
-
-  const puddleCount = 4 + runtime.activeLevel;
-  for (let i = 0; i < puddleCount; i++) {
-    const x = 550 + Math.random() * 400;
-    const y = 550 + Math.random() * 400;
-
-    const el = document.createElement('div');
-    el.className = 'sugar-puddle';
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    UI.decorationsLayer.appendChild(el);
-
-    runtime.puddles.push({ x: x + CONFIG.puddle.radius, y: y + 15 });
-  }
-}
-
-// ==========================================
-// CORE FRAME ITERATION ENGINE & LOGIC LOOPS
-// ==========================================
-function processFrameIteration() {
-  if (!runtime.isGameRunning) return;
-
-  let isInsideMud = false;
-  for (let puddle of runtime.puddles) {
-    const dx = runtime.px - puddle.x;
-    const dy = runtime.py - puddle.y;
-    if (Math.sqrt(dx*dx + dy*dy) < CONFIG.puddle.radius) {
-      isInsideMud = true;
+  // LEVEL PROGRESSION LOGIC TREE
+  switch (level) {
+    case 1:
+      // LEVEL 1 - Chocolate Bar Barriers Only
+      buildChocolateBarObstacles(obstaclesLayer);
+      bossCanAttack = false;
       break;
+
+    case 2:
+      // LEVEL 2 - Syrup Puddles & Active Boss Attacks
+      buildSyrupMudPuddles(obstaclesLayer);
+      bossCanAttack = true;
+      activateBossProjectiles();
+      break;
+
+    case 3:
+      // LEVEL 3 - Combine Level 1 & 2 Together (Ultimate Challenge)
+      buildChocolateBarObstacles(obstaclesLayer);
+      buildSyrupMudPuddles(obstaclesLayer);
+      bossCanAttack = true;
+      activateBossProjectiles();
+      break;
+  }
+}
+
+// --- 3. DYNAMIC GENERATION FUNCTIONS ---
+function buildChocolateBarObstacles(parentContainer) {
+  console.log("Spawning structural chocolate barriers...");
+  
+  // Preset layout coordinates so barriers don't trap players or cover up entities safely
+  const presets = [
+    { left: 150, top: 180, width: 220, height: 50 },
+    { left: 450, top: 400, width: 220, height: 50 }
+  ];
+
+  presets.forEach(data => {
+    const block = document.createElement('div');
+    block.className = 'chocolate-wall';
+    block.style.left = `${data.left}px`;
+    block.style.top = `${data.top}px`;
+    block.style.width = `${data.width}px`;
+    block.style.height = `${data.height}px`;
+    parentContainer.appendChild(block);
+  });
+}
+
+function buildSyrupMudPuddles(parentContainer) {
+  console.log("Spawning sticky purple syrup puddles...");
+  
+  const presets = [
+    { left: 320, top: 280 },
+    { left: 240, top: 420 },
+    { left: 500, top: 160 }
+  ];
+
+  presets.forEach(pos => {
+    const puddle = document.createElement('div');
+    puddle.className = 'sugar-puddle';
+    puddle.style.left = `${pos.left}px`;
+    puddle.style.top = `${pos.top}px`;
+    parentContainer.appendChild(puddle);
+  });
+}
+
+function spawnPowerupApple() {
+  // Positions apple randomly safely separated from top HUD layer fields
+  const randX = Math.floor(Math.random() * (window.innerWidth - 150)) + 50;
+  const randY = Math.floor(Math.random() * (window.innerHeight - 320)) + 180;
+  powerupEl.style.left = `${randX}px`;
+  powerupEl.style.top = `${randY}px`;
+}
+
+// --- 4. BOSS ATTACK AND SHOOTING SYSTEMS ---
+function activateBossProjectiles() {
+  bossProjectileInterval = setInterval(() => {
+    if (!gameActive || !bossCanAttack) return;
+
+    // Build Projectile Layer Node
+    const container = document.getElementById('game-container');
+    const glob = document.createElement('div');
+    glob.className = 'sugar-glob';
+    
+    // Fire from center point of the boss sprite coordinate space
+    let currentGlobX = enemyX + 48;
+    let currentGlobY = enemyY + 48;
+    glob.style.left = `${currentGlobX}px`;
+    glob.style.top = `${currentGlobY}px`;
+    container.appendChild(glob);
+
+    // Calculate normalized path tracking vectors to hit the player directly
+    const diffX = (playerX + 50) - currentGlobX;
+    const diffY = (playerY + 50) - currentGlobY;
+    const distance = Math.sqrt(diffX * diffX + diffY * diffY);
+    const speedX = (diffX / distance) * 4;
+    const speedY = (diffY / distance) * 4;
+
+    const globTimer = setInterval(() => {
+      if (!gameActive) {
+        clearInterval(globTimer);
+        glob.remove();
+        return;
+      }
+
+      currentGlobX += speedX;
+      currentGlobY += speedY;
+      glob.style.left = `${currentGlobX}px`;
+      glob.style.top = `${currentGlobY}px`;
+
+      // Collision Detection tracking against player boundaries
+      if (Math.abs(currentGlobX - (playerX + 38)) < 40 && Math.abs(currentGlobY - (playerY + 38)) < 40) {
+        clearInterval(globTimer);
+        glob.remove();
+        playerHp = Math.max(0, playerHp - 10);
+        pFill.style.width = `${playerHp}%`;
+        playerEl.classList.add('hurt-flash');
+        setTimeout(() => playerEl.classList.remove('hurt-flash'), 300);
+        statusMsg.textContent = "💥 HIT! Sugar Glob damaged you!";
+        checkGameOverConditions();
+      }
+
+      // Cleanup out of bounds projectiles automatically
+      if (currentGlobX < -50 || currentGlobX > window.innerWidth + 50 || currentGlobY < -50 || currentGlobY > window.innerHeight + 50) {
+        clearInterval(globTimer);
+        glob.remove();
+      }
+    }, 20);
+
+  }, 3000); // Boss fires projectile burst once every 3 seconds
+}
+
+// --- 5. GAME CONTROLLER RUNTIME RUN Loops ---
+function startGame() {
+  overlay.style.display = 'none';
+  
+  // State Initialization
+  playerHp = 100;
+  enemyHp = 100;
+  gameTimer = 0;
+  playerX = 80;
+  playerY = window.innerHeight / 2 - 50;
+  enemyX = window.innerWidth - 200;
+  enemyY = window.innerHeight / 2 - 60;
+  
+  pFill.style.width = '100%';
+  eFill.style.width = '100%';
+  timerBadge.textContent = "00:00.00";
+  levelBadge.textContent = `LEVEL ${currentLevel}`;
+  statusMsg.textContent = "🏃‍♂️ JOG ON SPOT TO START RUNNING!";
+
+  setupGameStageLayout(currentLevel);
+  
+  gameActive = true;
+  
+  // Core Render Loops Init
+  clearInterval(timerInterval);
+  const startTime = performance.now();
+  timerInterval = setInterval(() => {
+    const elapsed = (performance.now() - startTime) / 1000;
+    gameTimer = elapsed;
+    timerBadge.textContent = elapsed.toFixed(2) + "s";
+  }, 10);
+
+  requestAnimationFrame(gameLoop);
+}
+
+function gameLoop() {
+  if (!gameActive) return;
+
+  // Process player positional locomotion values
+  // Only allow execution movement processing if stepRate tracking sensor registers actual movement
+  if (stepRate > 0.1) {
+    let nextX = playerX + (moveDirX * playerSpeed * isStickyMultiplier);
+    let nextY = playerY + (moveDirY * playerSpeed * isStickyMultiplier);
+
+    // Dynamic Wall Collision Intersection checks
+    let hitWall = false;
+    const padding = 15;
+    document.querySelectorAll('.chocolate-wall').forEach(wall => {
+      const wL = parseFloat(wall.style.left);
+      const wT = parseFloat(wall.style.top);
+      const wW = parseFloat(wall.style.width);
+      const wH = parseFloat(wall.style.height);
+
+      if (nextX + padding < wL + wW && nextX + 100 - padding > wL &&
+          nextY + padding < wT + wH && nextY + 100 - padding > wT) {
+        hitWall = true;
+      }
+    });
+
+    // Simple Map Window Boundaries Constraint checking
+    if (!hitWall) {
+      if (nextX >= 0 && nextX <= window.innerWidth - 100) playerX = nextX;
+      if (nextY >= 60 && nextY <= window.innerHeight - 140) playerY = nextY;
+    }
+
+    // Set sprite animations or directions based on target velocities
+    if (moveDirX > 0) playerEl.style.backgroundPosition = "100% 33.3%";
+    else if (moveDirX < 0) playerEl.style.backgroundPosition = "0% 66.6%";
+  }
+
+  // Position Entity elements inside viewport
+  playerEl.style.left = `${playerX}px`;
+  playerEl.style.top = `${playerY}px`;
+  enemyEl.style.left = `${enemyX}px`;
+  enemyEl.style.top = `${enemyY}px`;
+
+  // Render Navigation Arrow to objective target tracking structures
+  updateNavigationRadar();
+
+  // Run Real-Time Environment Intersection Checks
+  processEnvironmentTriggers();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function updateNavigationRadar() {
+  // Arrow anchor source node coordinate center space matching
+  const pCenterX = playerX + 50;
+  const pCenterY = playerY + 50;
+  
+  let targetX = enemyX + 60;
+  let targetY = enemyY + 60;
+
+  // Target the apple first if the boss shield is active
+  if (enemyShieldActive && powerupEl.style.display !== 'none') {
+    targetX = parseFloat(powerupEl.style.left) + 25;
+    targetY = parseFloat(powerupEl.style.top) + 25;
+    navArrowEl.style.filter = "drop-shadow(0 0 8px #ffd166)";
+  } else {
+    navArrowEl.style.filter = "drop-shadow(0 0 8px #ff4d6d)";
+  }
+
+  navArrowEl.style.left = `${pCenterX}px`;
+  navArrowEl.style.top = `${pCenterY}px`;
+
+  const angleRad = Math.atan2(targetY - pCenterY, targetX - pCenterX);
+  const angleDeg = angleRad * (180 / Math.PI);
+  navArrowEl.style.transform = `rotate(${angleDeg}deg)`;
+}
+
+function processEnvironmentTriggers() {
+  // 1. Syrup Sticky Puddles overlap checks
+  let insidePuddle = false;
+  document.querySelectorAll('.sugar-puddle').forEach(puddle => {
+    const pL = parseFloat(puddle.style.left) + 40;
+    const pT = parseFloat(puddle.style.top) + 17;
+    const distance = Math.sqrt(Math.pow((playerX + 50) - pL, 2) + Math.pow((playerY + 50) - pT, 2));
+    if (distance < 45) insidePuddle = true;
+  });
+
+  if (insidePuddle) {
+    isStickyMultiplier = 0.4; // Reduces walking speed by 60%
+    playerEl.classList.add('sticky-slow');
+  } else {
+    isStickyMultiplier = 1.0;
+    playerEl.classList.remove('sticky-slow');
+  }
+
+  // 2. Apple Powerup collection intersection check
+  if (enemyShieldActive && powerupEl.style.display !== 'none') {
+    const appleX = parseFloat(powerupEl.style.left) + 25;
+    const appleY = parseFloat(powerupEl.style.top) + 25;
+    const distToApple = Math.sqrt(Math.pow((playerX + 50) - appleX, 2) + Math.pow((playerY + 50) - appleY, 2));
+    
+    if (distToApple < 55) {
+      powerupEl.style.display = 'none';
+      enemyShieldActive = false;
+      enemyEl.classList.remove('shielded');
+      statusMsg.textContent = "⚡ SHIELD BROKEN! SHAKE PHONE TO ATTACK BOSS!";
     }
   }
 
-  let movementVelocity = CONFIG.player.baseSpeed;
-  if (isInsideMud) {
-    movementVelocity = CONFIG.player.slowSpeed;
-    UI.player.classList.add('sticky-slow');
-    UI.motionDisplay.innerText = `⚠️ STUCK IN STICKY MUD (SPEED REDUCED)`;
-  } else {
-    UI.player.classList.remove('sticky-slow');
+  // 3. Proximity proximity check to hit boss
+  const distToBoss = Math.sqrt(Math.pow((playerX + 50) - (enemyX + 60), 2) + Math.pow((playerY + 50) - (enemyY + 60), 2));
+  if (distToBoss < 130) {
+    if (enemyShieldActive) {
+      statusMsg.textContent = "🛡️ Boss is Immune! Grab the Golden Apple!";
+    } else {
+      statusMsg.textContent = "👋 SHAKE DEVICE FIRMLY TO SMASH!";
+    }
+  }
+}
+
+// --- 6. DEV MOTION WEB ACCELEROMETER SENSOR INTERFACES ---
+function initMotionSensors() {
+  // Fallback testing support mechanisms via mouse movement for PC simulations
+  if (!window.DeviceMotionEvent) {
+    console.log("DeviceMotion API missing. Simulation backup injected.");
+    setupKeyboardSimulation();
+    return;
   }
 
-  if (runtime.isJoyActive && runtime.isPhysicallyMoving) {
-    const oldX = runtime.px;
-    const oldY = runtime.py;
+  // Event handler callback wrapper registration 
+  window.addEventListener('devicemotion', (event) => {
+    if (!gameActive) return;
 
-    runtime.px += runtime.joyX * movementVelocity;
-    runtime.py += runtime.joyY * movementVelocity;
+    let acc = event.accelerationIncludingGravity;
+    if (!acc || acc.x === null) acc = event.acceleration; 
+    if (!acc || acc.x === null) return;
 
-    for (let wall of runtime.walls) {
-      if (runtime.px + CONFIG.player.radius > wall.x && runtime.px - CONFIG.player.radius < wall.x + wall.width &&
-          runtime.py + CONFIG.player.radius > wall.y && runtime.py - CONFIG.player.radius < wall.y + wall.height) {
-        runtime.px = oldX;
-        runtime.py = oldY;
-        break;
+    // A. Run/Jog Step Processing calculations
+    let magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+    let delta = Math.abs(magnitude - lastAcceleration.gValue || 0);
+    
+    // Low pass filter smoothing mapping
+    if (delta > 2.2) {
+      stepRate = Math.min(1.0, stepRate + 0.15);
+    } else {
+      stepRate = Math.max(0.0, stepRate - 0.02);
+    }
+    
+    lastAcceleration.gValue = magnitude;
+    document.getElementById('step-rate-val').textContent = stepRate > 0.1 ? "RUNNING" : "STOPPED";
+
+    // B. Shake Vector Verification mapping for Weapon Attack triggering
+    let shakeDelta = Math.abs(acc.x - lastAcceleration.x) + Math.abs(acc.y - lastAcceleration.y);
+    if (shakeDelta > shakeThreshold && !enemyShieldActive) {
+      // Execute melee impact damage if standing close inside enemy frame box bounds
+      const distToBoss = Math.sqrt(Math.pow((playerX + 50) - (enemyX + 60), 2) + Math.pow((playerY + 50) - (enemyY + 60), 2));
+      if (distToBoss < 140) {
+        triggerWeaponDamageAttack();
       }
     }
 
-    runtime.px = Math.max(CONFIG.player.radius, Math.min(CONFIG.world.width - CONFIG.player.radius, runtime.px));
-    runtime.py = Math.max(CONFIG.player.radius, Math.min(CONFIG.world.height - CONFIG.player.radius, runtime.py));
-
-    processSpriteSheetRotation();
-    if (!isInsideMud) {
-      UI.motionDisplay.innerText = `Step Rate: ${(runtime.stepFrequency).toFixed(2)} | Running...`;
-    }
-  } else {
-    if (!isInsideMud) {
-      UI.motionDisplay.innerText = `Step Rate: 0.00 | Stand On Spot & JOG to Run`;
-    }
-  }
-
-  if (runtime.isPowerupSpawned) {
-    const dx = runtime.px - runtime.powerupX;
-    const dy = runtime.py - runtime.powerupY;
-    if (Math.sqrt(dx*dx + dy*dy) < CONFIG.player.radius + CONFIG.powerup.radius) {
-      runtime.isPowerupSpawned = false;
-      runtime.isBossShieldBroken = true;
-      UI.powerup.style.display = 'none';
-      UI.enemy.classList.remove('shielded'); 
-      UI.statusMsg.innerText = "🔓 Shield Shattered! Go Strike the Sugar Cube!";
-    }
-  }
-
-  adaptViewportClamping();
-  processRadarPointer();
-
-  requestAnimationFrame(processFrameIteration);
+    lastAcceleration.x = acc.x;
+    lastAcceleration.y = acc.y;
+    lastAcceleration.z = acc.z;
+  });
 }
 
-function processSpriteSheetRotation() {
-  const angle = Math.atan2(runtime.joyY, runtime.joyX) * (180 / Math.PI);
+function triggerWeaponDamageAttack() {
+  enemyHp = Math.max(0, enemyHp - 15);
+  eFill.style.width = `${enemyHp}%`;
   
-  if (angle >= -45 && angle <= 45) runtime.facingDirectionRow = 2;       
-  else if (angle > 45 && angle < 135) runtime.facingDirectionRow = 0;    
-  else if (angle >= 135 || angle <= -135) runtime.facingDirectionRow = 1; 
-  else runtime.facingDirectionRow = 3;                                  
-
-  runtime.animationTickCounter++;
-  if (runtime.animationTickCounter > 6) {
-    runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
-    runtime.animationTickCounter = 0;
-  }
-
-  const xPercentage = runtime.currentFrameIndex * 50; 
-  const yPercentage = runtime.facingDirectionRow * 33.33;
-  UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
-}
-
-function processRadarPointer() {
-  let targetX = runtime.isBossShieldBroken ? runtime.ex : runtime.powerupX;
-  let targetY = runtime.isBossShieldBroken ? runtime.ey : runtime.powerupY;
-
-  const dx = targetX - runtime.px;
-  const dy = targetY - runtime.py;
-  const distance = Math.sqrt(dx*dx + dy*dy);
-
-  if (distance > 80) {
-    UI.arrow.style.display = 'flex';
-    const angleRad = Math.atan2(dy, dx);
-    UI.arrow.style.transform = `rotate(${angleRad}rad)`;
-  } else {
-    UI.arrow.style.display = 'none';
-  }
-}
-
-function adaptViewportClamping() {
-  const viewW = window.innerWidth;
-  const viewH = window.innerHeight;
-
-  let camX = runtime.px - viewW / 2;
-  let camY = runtime.py - viewH / 2;
-
-  camX = Math.max(0, Math.min(CONFIG.world.width - viewW, camX));
-  camY = Math.max(0, Math.min(CONFIG.world.height - viewH, camY));
-
-  UI.player.style.left = `${runtime.px - 50}px`;
-  UI.player.style.top = `${runtime.py - 50}px`;
-
-  UI.enemy.style.left = `${runtime.ex - 60}px`;
-  UI.enemy.style.top = `${runtime.ey - 60}px`;
-
-  if (runtime.isPowerupSpawned) {
-    UI.powerup.style.left = `${runtime.powerupX - 25}px`;
-    UI.powerup.style.top = `${runtime.powerupY - 25}px`;
-  }
-
-  // FIX: Moves the background image tiling inversely with camera view matrix scrolls
-  document.getElementById('game-container').style.backgroundPosition = `${-camX}px ${-camY}px`;
+  enemyEl.classList.add('attack-pulse');
+  setTimeout(() => enemyEl.classList.remove('attack-pulse'), 200);
   
-  UI.obstaclesLayer.style.transform = `translate(${-camX}px, ${-camY}px)`;
-  UI.decorationsLayer.style.transform = `translate(${-camX}px, ${-camY}px)`;
-  UI.player.style.transform = `translate(${-camX}px, ${-camY}px)`;
-  UI.enemy.style.transform = `translate(${-camX}px, ${-camY}px)`;
-  UI.powerup.style.transform = `translate(${-camX}px, ${-camY}px)`;
+  statusMsg.textContent = `💥 SMASHED! Boss lost 15 HP!`;
+  
+  // Reactivate protection phase sequence if boss survives inside Level 3 loop
+  if (enemyHp > 0 && currentLevel >= 2) {
+    enemyShieldActive = true;
+    enemyEl.classList.add('shielded');
+    powerupEl.style.display = 'block';
+    spawnPowerupApple();
+  }
+
+  checkGameOverConditions();
 }
 
-// ==========================================
-// DAMAGE EVALUATION & HIT ENGINE TRIPPERS
-// ==========================================
-function evaluatePlayerAttackAction() {
-  const dx = runtime.px - runtime.ex;
-  const dy = runtime.py - runtime.ey;
-  const distance = Math.sqrt(dx*dx + dy*dy);
-
-  if (distance < CONFIG.player.radius + CONFIG.boss.radius + 40) {
-    if (!runtime.isBossShieldBroken) {
-      UI.statusMsg.innerText = "❌ IMMUNE! Shield blocks your strike! Grab Apple!";
-      return;
-    }
-
-    runtime.bossHp -= 15;
-    UI.enemy.classList.add('attack-pulse');
-    UI.statusMsg.innerText = `💥 SMASHED! Boss lost 15 HP!`;
-    setTimeout(() => UI.enemy.classList.remove('attack-pulse'), 200);
-
-    if (runtime.bossHp <= 0) {
-      terminateGameLoopContext(true);
-    } else {
-      updateHealthBars();
-    }
+// --- 7. GAME OVER AND HIGH SCORE EVALUATION WINDOW ---
+function checkGameOverConditions() {
+  if (enemyHp <= 0) {
+    endGameSession(true); // Victory!
+  } else if (playerHp <= 0) {
+    endGameSession(false); // Defeat
   }
 }
 
-function updateHealthBars() {
-  const pPct = Math.max(0, (runtime.playerHp / runtime.playerMaxHp) * 100);
-  const ePct = Math.max(0, (runtime.bossHp / runtime.bossMaxHp) * 100);
-  UI.playerFill.style.width = `${pPct}%`;
-  UI.enemyFill.style.width = `${ePct}%`;
-}
+function endGameSession(isVictory) {
+  gameActive = false;
+  clearInterval(timerInterval);
+  if (bossProjectileInterval) clearInterval(bossProjectileInterval);
 
-function terminateGameLoopContext(isVictory) {
-  runtime.isGameRunning = false;
-  clearInterval(runtime.timerInterval);
-  
-  UI.overlay.style.display = 'flex';
+  const titleText = document.getElementById('menu-title');
+  const subtitleText = document.querySelector('.menu-subtitle');
   
   if (isVictory) {
-    UI.menuTitle.innerText = "🎉 QUEST CLEAR! 🎉";
-    UI.menuSubtitle.innerText = `You burned away the glucose in ${formatTimeOutput(runtime.elapsedTime)}!`;
+    titleText.textContent = "🏆 VICTORY!";
+    let praiseMsg = `You cleared Stage ${currentLevel} in ${gameTimer.toFixed(2)}s!`;
     
-    const historicalBest = localStorage.getItem(`fitquest_lvl_${runtime.activeLevel}`);
-    if (!historicalBest || runtime.elapsedTime < parseInt(historicalBest, 10)) {
-      localStorage.setItem(`fitquest_lvl_${runtime.activeLevel}`, runtime.elapsedTime.toString());
-      UI.statusMsg.innerText = "🔥 NEW PERSONAL BEST TIME LOCKED IN!";
+    if (highScore === 0 || gameTimer < highScore) {
+      highScore = gameTimer;
+      localStorage.setItem('fitquest_highscore', highScore);
+      praiseMsg += " NEW RECORD! 🎉";
     }
+    subtitleText.textContent = praiseMsg;
   } else {
-    UI.menuTitle.innerText = "💀 QUEST FAILED 💀";
-    UI.menuSubtitle.innerText = "The Sugar Overlords drained your core stamina!";
+    titleText.textContent = "💀 DEFEAT!";
+    subtitleText.textContent = "Your Energy ran out. Keep moving to stay fit!";
   }
 
-  UI.actionBtn.innerText = "PLAY AGAIN 🔄";
-  loadStageHighScores();
+  // Redraw highscore metrics and reopen main menu layout overlay card view
+  highScoreDisplay.textContent = highScore > 0 ? `Best Time: ${highScore.toFixed(2)}s` : "Best Time: 00:00";
+  startBtn.textContent = "PLAY AGAIN";
+  overlay.style.display = 'flex';
 }
 
-function formatTimeOutput(ms) {
-  const totalSeconds = ms / 1000;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  const centiseconds = Math.floor((ms % 1000) / 10);
-  
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+// --- 8. VIRTUAL JOYSTICK LOCOMOTION HANDLING INTERFACES ---
+function setupJoystickInput() {
+  joyBoundary.addEventListener('touchstart', (e) => {
+    joystickActive = true;
+    const touch = e.touches[0];
+    joyStartX = touch.clientX;
+    joyStartY = touch.clientY;
+  });
+
+  joyBoundary.addEventListener('touchmove', (e) => {
+    if (!joystickActive) return;
+    const touch = e.touches[0];
+    
+    let dX = touch.clientX - joyStartX;
+    let dY = touch.clientY - joyStartY;
+    let distance = Math.sqrt(dX * dX + dY * dY);
+
+    if (distance > maxJoystickDistance) {
+      dX = (dX / distance) * maxJoystickDistance;
+      dY = (dY / distance) * maxJoystickDistance;
+      distance = maxJoystickDistance;
+    }
+
+    joyStick.style.transform = `translate(${dX}px, ${dY}px)`;
+
+    // Output direction vector values
+    moveDirX = dX / maxJoystickDistance;
+    moveDirY = dY / maxJoystickDistance;
+  });
+
+  joyBoundary.addEventListener('touchend', resetJoystickState);
+  joyBoundary.addEventListener('touchcancel', resetJoystickState);
+}
+
+function resetJoystickState() {
+  joystickActive = false;
+  moveDirX = 0;
+  moveDirY = 0;
+  joyStick.style.transform = 'translate(0px, 0px)';
+}
+
+// --- 9. TESTING UTILITIES (DESKTOP SIMULATION FALLBACK) ---
+function setupKeyboardSimulation() {
+  stepRate = 1.0; // Assume player is walking constantly on PC environments
+  document.getElementById('step-rate-val').textContent = "SIMULATOR ACTIVE";
+
+  window.addEventListener('keydown', (e) => {
+    if (!gameActive) return;
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') moveDirX = -1;
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') moveDirX = 1;
+    if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') moveDirY = -1;
+    if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') moveDirY = 1;
+    
+    // Spacebar mapping alternative proxy simulation matching shaking attacks
+    if (e.key === ' ' && !enemyShieldActive) {
+      const distToBoss = Math.sqrt(Math.pow((playerX + 50) - (enemyX + 60), 2) + Math.pow((playerY + 50) - (enemyY + 60), 2));
+      if (distToBoss < 140) triggerWeaponDamageAttack();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (['ArrowLeft', 'ArrowRight', 'a', 'd'].includes(e.key)) moveDirX = 0;
+    if (['ArrowUp', 'ArrowDown', 'w', 's'].includes(e.key)) moveDirY = 0;
+  });
 }
