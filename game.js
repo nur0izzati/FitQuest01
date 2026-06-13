@@ -27,6 +27,7 @@ let runtime = {
   isStuckInSyrup: false,
   sugarGlobs: [],
   sugarPuddles: [],
+  obstacles: [], // SIMPAN DATA DINDING COKLAT
   lastSugarFired: 0,
   selectedSprite: 'assets/hero-sprite.png',
   startTime: 0,
@@ -35,11 +36,13 @@ let runtime = {
 
 const UI = {
   container: document.getElementById('game-container'),
-  decorationsContainer: document.getElementById('field-decorations'), // KONTINER BARU
+  decorationsContainer: document.getElementById('field-decorations'),
+  obstaclesContainer: document.getElementById('obstacles-layer'), // HIASAN HALANGAN COKLAT
   overlay: document.getElementById('overlay'),
   title: document.getElementById('menu-title'),
   safety: document.getElementById('safety-box'),
   btn: document.getElementById('action-btn'),
+  actionsContainer: document.getElementById('menu-actions-container'),
   badge: document.getElementById('level-badge'),
   player: document.getElementById('player'),
   enemy: document.getElementById('enemy'),
@@ -58,28 +61,82 @@ const UI = {
 
 displayCurrentLevelHighScore();
 
-// MENJANA HIASAN PADANG RUMPUT & BUNGA SECARA RAWAK (BARU)
 function generateProceduralFieldDecorations() {
   UI.decorationsContainer.innerHTML = ''; 
   const decorativeEmojis = ['🌸', '🌼', '🌿', '🌱', '🍀'];
-  const densityCount = Math.floor((window.innerWidth * window.innerHeight) / 22000); // Kepadatan mengikut saiz skrin telefon
+  const densityCount = Math.floor((window.innerWidth * window.innerHeight) / 22000);
 
   for (let i = 0; i < densityCount; i++) {
     let item = document.createElement('div');
     item.className = 'field-item';
     item.textContent = decorativeEmojis[Math.floor(Math.random() * decorativeEmojis.length)];
-    
-    // Tabur rawak kedudukan paksi koordinat X & Y
     let posX = Math.random() * (window.innerWidth - 30);
     let posY = Math.random() * (window.innerHeight - 30);
-    
     item.style.left = `${posX}px`;
     item.style.top = `${posY}px`;
-    // Beri variasi saiz bunga yang rawak supaya nampak natural
     item.style.animationDelay = `${Math.random() * 2}s`;
-    
     UI.decorationsContainer.appendChild(item);
   }
+}
+
+// BINA BLOK DINDING COKLAT MENGIKUT TAHAP LEVEL (BARU)
+function generateChocolateObstacles() {
+  UI.obstaclesContainer.innerHTML = '';
+  runtime.obstacles = [];
+
+  let mapW = window.innerWidth;
+  let mapH = window.innerHeight;
+  let blueprint = [];
+
+  // Reka corak posisi kedudukan dinding tebal berdasarkan tahap Level kesukaran
+  if (runtime.currentLevel === 1) {
+    // Satu dinding melintang besar di tengah padang
+    blueprint.push({ x: mapW * 0.25, y: mapH * 0.45, w: mapW * 0.5, h: 40 });
+  } 
+  else if (runtime.currentLevel === 2) {
+    // Dua blok dinding berbentuk koridor serong
+    blueprint.push({ x: mapW * 0.15, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
+    blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
+  } 
+  else if (runtime.currentLevel === 3) {
+    // Tiga halangan tebal membentuk pagar maze makmal gula
+    blueprint.push({ x: mapW * 0.2, y: mapH * 0.25, w: mapW * 0.6, h: 35 });
+    blueprint.push({ x: mapW * 0.1, y: mapH * 0.6, w: mapW * 0.4, h: 35 });
+    blueprint.push({ x: mapW * 0.6, y: mapH * 0.6, w: mapW * 0.3, h: 35 });
+  }
+
+  blueprint.forEach(wall => {
+    let element = document.createElement('div');
+    element.className = 'chocolate-wall';
+    element.style.left = `${wall.x}px`;
+    element.style.top = `${wall.y}px`;
+    element.style.width = `${wall.w}px`;
+    element.style.height = `${wall.h}px`;
+    UI.obstaclesContainer.appendChild(element);
+    
+    runtime.obstacles.push({
+      x: wall.x, y: wall.y,
+      width: wall.w, height: wall.h
+    });
+  });
+}
+
+// LOGIK SEMAKAN COLLISION DETECTION DINDING PEPEJAL COKLAT (BARU)
+function checkPlayerWallCollisions(nextX, nextY) {
+  // Anggaran saiz sebenar kotak tubuh fizikal Hero (Pemain bersaiz 100x100, kita ambil saiz kotak tengah 50x50)
+  let pSize = 50; 
+  let pLeft = nextX + 25;
+  let pRight = nextX + 25 + pSize;
+  let pTop = nextY + 35;
+  let pBottom = nextY + 35 + pSize;
+
+  for (let wall of runtime.obstacles) {
+    if (pRight > wall.x && pLeft < wall.x + wall.width &&
+        pBottom > wall.y && pTop < wall.y + wall.height) {
+      return true; // Terlanggar dinding coklat!
+    }
+  }
+  return false;
 }
 
 function changeMenuLevel(direction) {
@@ -131,13 +188,36 @@ function igniteEngine() {
   }
 }
 
+// KEMBALI KE MAIN MENU UTAMA (BARU)
+function returnToMainMenu() {
+  runtime.halted = true;
+  clearAllSugarHazards();
+  UI.obstaclesContainer.innerHTML = '';
+  UI.decorationsContainer.innerHTML = '';
+
+  // Kembalikan teks tajuk asal menu
+  UI.title.textContent = "✨ FITQUEST ✨";
+  
+  // Tampilkan semua setup box pilihan menu semula
+  document.getElementById('menu-setup-level').style.display = 'block';
+  document.getElementById('menu-setup-char').style.display = 'block';
+  document.getElementById('menu-instructions').style.display = 'block';
+  UI.safety.style.display = 'block';
+
+  // Susun semula struktur butang tunggal START GAME
+  UI.actionsContainer.innerHTML = `<button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>`;
+  
+  // Segarkan skor tinggi paparan
+  displayCurrentLevelHighScore();
+  UI.overlay.style.display = 'flex';
+}
+
 function setupEnvironment() {
   UI.overlay.style.display = 'none';
   runtime.halted = false;
   runtime.pHP = 100;
   UI.pFill.style.width = '100%';
   
-  // Letak Hero di penjuru kiri atas skrin padang
   runtime.pX = 20;
   runtime.pY = 20;
   
@@ -145,7 +225,8 @@ function setupEnvironment() {
   runtime.elapsedTime = 0;
   UI.timerBadge.textContent = "⏱️ 00:00.00";
 
-  generateProceduralFieldDecorations(); // Bina hiasan bunga baru di padang apabila game mula!
+  generateProceduralFieldDecorations();
+  generateChocolateObstacles(); // Bina dinding halangan baru pada permulaan perlawanan
   clearAllSugarHazards();
   resetBossForLevel();
 
@@ -162,7 +243,6 @@ function setupEnvironment() {
 }
 
 function resetBossForLevel() {
-  // Letak Boss jauh di sudut pepenjuru kanan paling bawah skrin padang
   let eWidth = 120;
   runtime.eX = window.innerWidth - eWidth - 20;
   runtime.eY = window.innerHeight - eWidth - 55; 
@@ -203,8 +283,25 @@ function spawnPowerUpRandomly() {
   
   const horizontalMargin = window.innerWidth * 0.25;
   const verticalMargin = window.innerHeight * 0.25;
-  runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
-  runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
+  
+  // Pastikan Apple tidak bertindih di atas permukaan koordinat dinding coklat
+  let validSpawn = false;
+  let attempts = 0;
+  while (!validSpawn && attempts < 20) {
+    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
+    
+    // Semak koordinat perlanggaran dengan tatasusunan dinding coklat
+    let hitWall = false;
+    for (let wall of runtime.obstacles) {
+      if (runtime.powerX + 40 > wall.x && runtime.powerX < wall.x + wall.width &&
+          runtime.powerY + 40 > wall.y && runtime.powerY < wall.y + wall.height) {
+        hitWall = true;
+      }
+    }
+    if (!hitWall) validSpawn = true;
+    attempts++;
+  }
   
   UI.power.style.left = `${runtime.powerX}px`;
   UI.power.style.top = `${runtime.powerY}px`;
@@ -320,8 +417,22 @@ function engineFrameTick(timestamp) {
     }
   }
 
-  runtime.pX += runtime.steerX * runtime.currentSpeed;
-  runtime.pY += runtime.steerY * runtime.currentSpeed;
+  // AMBIL KIRA KOORDINAT CADANGAN POSISI PERGERAKAN BAHARU HERO
+  let proposedX = runtime.pX + (runtime.steerX * runtime.currentSpeed);
+  let proposedY = runtime.pY + (runtime.steerY * runtime.currentSpeed);
+
+  // KEMASKINI LOGIK: Kemaskini paksi hanya jika proposed koordinat TIDAK melanggar dinding coklat pepejal
+  if (!checkPlayerWallCollisions(proposedX, runtime.pY)) {
+    runtime.pX = proposedX;
+  } else {
+    runtime.currentSpeed *= 0.4; // Beri kesan impak hentakan kecil jika melanggar dinding coklat
+  }
+
+  if (!checkPlayerWallCollisions(runtime.pX, proposedY)) {
+    runtime.pY = proposedY;
+  } else {
+    runtime.currentSpeed *= 0.4;
+  }
 
   runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
   runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
@@ -381,7 +492,15 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
+    // Jika peluru terlanggar dinding coklat, ia lebur menjadi kolam sirap
+    let hitWall = false;
+    for (let wall of runtime.obstacles) {
+      if (g.x > wall.x && g.x < wall.x + wall.width && g.y > wall.y && g.y < wall.y + wall.height) {
+        hitWall = true;
+      }
+    }
+
+    if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20 || hitWall) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
@@ -462,9 +581,14 @@ function triggerGameOverScreen() {
   retryDesc.style.margin = '10px 0 20px 0';
   retryDesc.style.fontSize = '0.85rem';
   retryDesc.textContent = "Your energy drained completely. Let's stand up and try again!";
-  
-  card.insertBefore(retryDesc, UI.btn);
-  UI.btn.textContent = "RETRY LEVEL";
+  card.insertBefore(retryDesc, UI.actionsContainer);
+
+  // BUTANG RE-TRY DAN BACK TO MENU DALAM OVERLAY GAME OVER
+  UI.actionsContainer.innerHTML = `
+    <button class="cta-btn pulse-button" onclick="igniteEngine()">RETRY LEVEL 🔄</button>
+    <button class="secondary-btn" onclick="returnToMainMenu()">BACK TO MAIN MENU 🏠</button>
+  `;
+
   UI.overlay.style.display = 'flex';
 }
 
@@ -500,12 +624,12 @@ function processCombatStrike() {
     UI.eFill.style.width = `${runtime.eHP}%`;
     UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
     updateSugarBossScale();
-    UI.status.textContent = `💥 HIT! Boss: ${runtime.eHP}%`;
+    UI.status.textContent = `💥 HIT! Sugar Cube: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
 
     if (runtime.eHP <= 0) processLevelVictory();
   } else {
-    UI.status.textContent = "❌ Too far! Jog closer to the boss!";
+    UI.status.textContent = "❌ Too far! Jog closer to the Sugar Cube!";
   }
 }
 
@@ -528,9 +652,12 @@ function processLevelVictory() {
   let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
   const card = UI.overlay.querySelector('.menu-card');
-  card.querySelector('.how-to-play-box').style.display = 'none';
-  card.querySelector('.setup-box').style.display = 'none';
-  card.querySelector('.safety-warning-box').style.display = 'none';
+  // Sembunyikan setup box biasa sementara ketika skrin kemenangan
+  document.getElementById('menu-setup-level').style.display = 'none';
+  document.getElementById('menu-setup-char').style.display = 'none';
+  document.getElementById('menu-instructions').style.display = 'none';
+  UI.safety.style.display = 'none';
+  
   card.querySelectorAll('.health-fact-box').forEach(b => b.remove());
   card.querySelectorAll('#menu-desc').forEach(p => p.remove());
 
@@ -559,30 +686,37 @@ function processLevelVictory() {
   factBox.appendChild(factContent);
 
   let timeNote = `<b style="color: #2ee575;">Quest Time: ${finalTimeFormatted}</b><br><br>`;
+  let nextLevelTriggerText = "";
 
   if (runtime.currentLevel === 1) {
     UI.title.textContent = "🎉 STAGE 1 CLEAR";
     factContent.innerHTML = timeNote + "By actively running on the spot just now, you successfully burned off empty sugar calories before they could convert into unhealthy body fat storage!";
     runtime.currentLevel = 2;
-    UI.btn.textContent = "ENTER LEVEL 2";
-    UI.badge.textContent = `LEVEL 2`;
+    nextLevelTriggerText = "ENTER LEVEL 2 ➡️";
   } 
   else if (runtime.currentLevel === 2) {
     UI.title.textContent = "🎉 STAGE 2 CLEAR";
     factContent.innerHTML = timeNote + "Constant blood sugar spikes can lead to insulin resistance. Regular active physical movement keeps your body cells sensitive and healthy!";
     runtime.currentLevel = 3;
-    UI.btn.textContent = "ENTER LEVEL 3";
-    UI.badge.textContent = `LEVEL 3`;
+    nextLevelTriggerText = "ENTER LEVEL 3 ➡️";
   } 
   else if (runtime.currentLevel === 3) {
     UI.title.textContent = "🏆 CHAMPION!";
     factContent.innerHTML = timeNote + "Fantastic job! Maintaining an active workout routine drastically reduces chronic long-term Type-2 Diabetes risks. Keep moving!";
     runtime.currentLevel = 1;
-    UI.btn.textContent = "RESTART QUEST";
-    UI.badge.textContent = `LEVEL 1`;
+    nextLevelTriggerText = "RESTART QUEST 🔄";
   }
 
-  card.insertBefore(factBox, UI.btn);
+  card.insertBefore(factBox, UI.actionsContainer);
+  UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+  UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
+
+  // REKA BUTANG DINAMIK: MENYEDIAKAN PILIHAN KELUAR MENU KEPADA PEMAIN (BARU)
+  UI.actionsContainer.innerHTML = `
+    <button class="cta-btn pulse-button" onclick="igniteEngine()">${nextLevelTriggerText}</button>
+    <button class="secondary-btn" onclick="returnToMainMenu()">BACK TO MAIN MENU 🏠</button>
+  `;
+
   displayCurrentLevelHighScore();
 
   setTimeout(() => {
