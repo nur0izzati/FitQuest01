@@ -1,12 +1,9 @@
-:root { 
+:root {
   --primary: #2ee575;
   --danger: #ff4d6d;
   --powerup: #ffd166;
   --sugar-white: #ffffff;
-  --field-green: #5cba5c;
-  --field-dark-green: #4ca64c;
   --kawaii-pink: #ff85a2;
-  --kawaii-blue: #06d6a0;
   --panel-bg: rgba(28, 32, 43, 0.82);
 }
 
@@ -22,7 +19,7 @@ body {
   padding: 0;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--field-green);
+  background: #5cba5c;
   color: #fff;
 }
 
@@ -30,9 +27,30 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  /* PERUBAHAN: Warna lantai padang rumput */
-  background: radial-gradient(circle at center, var(--field-green) 0%, var(--field-dark-green) 100%);
+  /* PERUBAHAN: Menyokong fail gambar background.png baharu, dipadankan dengan warna padang jika fail belum dimuat naik */
+  background-image: url('background.png');
+  background-size: cover;
+  background-position: center;
+  background-color: #5cba5c;
   overflow: hidden;
+}
+
+/* SISTEM BLOK HALANGAN PEPEJAL DINDING COKLAT (BARU) */
+.chocolate-wall {
+  position: absolute;
+  background: linear-gradient(135deg, #5c3a21 0%, #402613 100%);
+  border: 3px solid #7c5233;
+  border-radius: 12px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.3);
+  z-index: 4;
+}
+/* Corak petak bar coklat kecil di dalam dinding */
+.chocolate-wall::before {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; bottom: 4px;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
 }
 
 /* HIASAN ELEMENT DEKORASI PADANG (BUNGA & RUMPUT) */
@@ -40,7 +58,7 @@ body {
   position: absolute;
   font-size: 1.1rem;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.8;
   z-index: 2;
   animation: plantSway 3s infinite alternate ease-in-out;
 }
@@ -57,7 +75,7 @@ body {
   width: 100%;
   height: 100%;
   background: rgba(18, 22, 20, 0.55);
-  backdrop-filter: blur(8px); /* Kesan kabur di belakang menu */
+  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
@@ -70,9 +88,8 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* KAD MENU GAYA FROSTED GLASS (KAWAII-PREMIUM) */
 .menu-card {
-  background: rgba(25, 35, 30, 0.85);
+  background: rgba(25, 35, 30, 0.88);
   border: 3px solid rgba(255, 255, 255, 0.15);
   border-radius: 24px;
   padding: 20px;
@@ -91,6 +108,7 @@ body {
   color: #fff;
   text-shadow: 0 0 10px var(--kawaii-pink), 0 0 20px var(--kawaii-pink);
   letter-spacing: 1px;
+  text-align: center;
   animation: titleFloat 2.5s infinite alternate ease-in-out;
 }
 @keyframes titleFloat {
@@ -104,6 +122,7 @@ body {
   color: #cbd5e1;
   font-weight: 500;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .interactive-panel {
@@ -153,11 +172,10 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
-  transition: transform 0.1s, background-color 0.2s;
+  transition: transform 0.1s;
 }
 .arrow-btn:active {
-  background: var(--kawaii-pink);
-  transform: scale(0.85); /* Kesan picit butang menu */
+  transform: scale(0.85);
 }
 
 #high-score-display {
@@ -188,10 +206,7 @@ body {
   cursor: pointer;
   font-weight: bold;
   font-size: 0.85rem;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.char-btn:active {
-  transform: scale(0.92);
+  transition: all 0.2s;
 }
 .char-btn.active-pink {
   background: rgba(255, 133, 162, 0.18);
@@ -266,7 +281,7 @@ body {
 }
 .how-to-play-box li { margin-bottom: 5px; }
 
-/* REKA BENTUK BUTTON UTAMA YANG JELAS & INTERAKTIF */
+/* REKA BENTUK BUTTON INTERAKTIF */
 .cta-btn {
   background: linear-gradient(135deg, #2ee575 0%, #1b9a4c 100%);
   border: none;
@@ -279,11 +294,10 @@ body {
   cursor: pointer;
   box-shadow: 0 6px 20px rgba(46, 229, 117, 0.35);
   margin-top: 8px;
-  transition: transform 0.1s, box-shadow 0.2s;
+  transition: transform 0.1s;
 }
 .cta-btn:active {
   transform: scale(0.95);
-  box-shadow: 0 3px 10px rgba(46, 229, 117, 0.2);
 }
 .pulse-button {
   animation: buttonPulseGlow 1.8s infinite alternate ease-in-out;
@@ -291,6 +305,25 @@ body {
 @keyframes buttonPulseGlow {
   0% { box-shadow: 0 0 10px rgba(46, 229, 117, 0.3); }
   100% { box-shadow: 0 0 25px rgba(46, 229, 117, 0.65); }
+}
+
+/* BUTANG KELABU KUSTOM UNTUK BALIK KE MENU */
+.secondary-btn {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  border: none;
+  color: #fff;
+  padding: 12px 0;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 40px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
+  margin-top: 8px;
+  transition: transform 0.1s;
+}
+.secondary-btn:active {
+  transform: scale(0.95);
 }
 
 /* GAMEPLAY ENTITIES */
@@ -477,5 +510,4 @@ body {
   border: 2px solid #fff;
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
