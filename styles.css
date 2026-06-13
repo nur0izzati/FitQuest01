@@ -299,7 +299,23 @@ body {
   box-shadow: 0 6px 20px rgba(46, 229, 117, 0.35);
   margin-top: 8px;
 }
-.cta-btn:active { transform: scale(0.95); }
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 14px 0;
+  width: 100%;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: 40px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.cta-btn:active, .secondary-btn:active { transform: scale(0.95); }
+
 .pulse-button { animation: buttonPulseGlow 1.8s infinite alternate ease-in-out; }
 @keyframes buttonPulseGlow {
   0% { box-shadow: 0 0 10px rgba(46, 229, 117, 0.3); }
