@@ -27,17 +27,19 @@ let runtime = {
   isStuckInSyrup: false,
   sugarGlobs: [],
   sugarPuddles: [],
-  obstacles: [], // SIMPAN DATA DINDING COKLAT
+  obstacles: [], 
   lastSugarFired: 0,
   selectedSprite: 'assets/hero-sprite.png',
   startTime: 0,
-  elapsedTime: 0
+  elapsedTime: 0,
+  audioCtx: null, // Menguruskan sistem audio web
+  lastStepSoundTime: 0
 };
 
 const UI = {
   container: document.getElementById('game-container'),
   decorationsContainer: document.getElementById('field-decorations'),
-  obstaclesContainer: document.getElementById('obstacles-layer'), // HIASAN HALANGAN COKLAT
+  obstaclesContainer: document.getElementById('obstacles-layer'), 
   overlay: document.getElementById('overlay'),
   title: document.getElementById('menu-title'),
   safety: document.getElementById('safety-box'),
@@ -61,6 +63,97 @@ const UI = {
 
 displayCurrentLevelHighScore();
 
+// ==========================================
+// SISTEM WEB AUDIO API (KAWAII RETRO SOUNDS)
+// ==========================================
+function initAudioEngine() {
+  if (!runtime.audioCtx) {
+    runtime.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSoundFX(type) {
+  if (!runtime.audioCtx) return;
+  
+  // Sambung semula audio jika ia disekat oleh pelayar
+  if (runtime.audioCtx.state === 'suspended') {
+    runtime.audioCtx.resume();
+  }
+
+  const ctx = runtime.audioCtx;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+
+  if (type === 'step') {
+    // Bunyi tapak kaki berjalan comel (Pop ringan)
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } 
+  else if (type === 'shoot') {
+    // Bunyi Sugar Cube tembak (Pew!)
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } 
+  else if (type === 'hit_hero') {
+    // Bunyi Hero terlanggar/sakit (Hurt)
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } 
+  else if (type === 'hit_boss') {
+    // Bunyi pemain pukul Sugar Cube
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.setValueAtTime(450, now + 0.05);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+  else if (type === 'powerup') {
+    // Bunyi kutip Apple (Chime ceria)
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, now); // C5
+    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+    osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+  else if (type === 'victory') {
+    // Alunan muzik menang ringkas
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(587.33, now); // D5
+    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+    osc.frequency.setValueAtTime(880.00, now + 0.2); // A5
+    osc.frequency.setValueAtTime(987.77, now + 0.3); // B5
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+}
+
 function generateProceduralFieldDecorations() {
   UI.decorationsContainer.innerHTML = ''; 
   const decorativeEmojis = ['🌸', '🌼', '🌿', '🌱', '🍀'];
@@ -79,7 +172,6 @@ function generateProceduralFieldDecorations() {
   }
 }
 
-// BINA BLOK DINDING COKLAT MENGIKUT TAHAP LEVEL (BARU)
 function generateChocolateObstacles() {
   UI.obstaclesContainer.innerHTML = '';
   runtime.obstacles = [];
@@ -88,18 +180,14 @@ function generateChocolateObstacles() {
   let mapH = window.innerHeight;
   let blueprint = [];
 
-  // Reka corak posisi kedudukan dinding tebal berdasarkan tahap Level kesukaran
   if (runtime.currentLevel === 1) {
-    // Satu dinding melintang besar di tengah padang
     blueprint.push({ x: mapW * 0.25, y: mapH * 0.45, w: mapW * 0.5, h: 40 });
   } 
   else if (runtime.currentLevel === 2) {
-    // Dua blok dinding berbentuk koridor serong
     blueprint.push({ x: mapW * 0.15, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
     blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
   } 
   else if (runtime.currentLevel === 3) {
-    // Tiga halangan tebal membentuk pagar maze makmal gula
     blueprint.push({ x: mapW * 0.2, y: mapH * 0.25, w: mapW * 0.6, h: 35 });
     blueprint.push({ x: mapW * 0.1, y: mapH * 0.6, w: mapW * 0.4, h: 35 });
     blueprint.push({ x: mapW * 0.6, y: mapH * 0.6, w: mapW * 0.3, h: 35 });
@@ -121,9 +209,7 @@ function generateChocolateObstacles() {
   });
 }
 
-// LOGIK SEMAKAN COLLISION DETECTION DINDING PEPEJAL COKLAT (BARU)
 function checkPlayerWallCollisions(nextX, nextY) {
-  // Anggaran saiz sebenar kotak tubuh fizikal Hero (Pemain bersaiz 100x100, kita ambil saiz kotak tengah 50x50)
   let pSize = 50; 
   let pLeft = nextX + 25;
   let pRight = nextX + 25 + pSize;
@@ -133,7 +219,7 @@ function checkPlayerWallCollisions(nextX, nextY) {
   for (let wall of runtime.obstacles) {
     if (pRight > wall.x && pLeft < wall.x + wall.width &&
         pBottom > wall.y && pTop < wall.y + wall.height) {
-      return true; // Terlanggar dinding coklat!
+      return true; 
     }
   }
   return false;
@@ -180,6 +266,7 @@ function selectGender(gender) {
 }
 
 function igniteEngine() {
+  initAudioEngine(); // Mengaktifkan enjin audio sebaik butang ditekan
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
@@ -188,26 +275,20 @@ function igniteEngine() {
   }
 }
 
-// KEMBALI KE MAIN MENU UTAMA (BARU)
 function returnToMainMenu() {
   runtime.halted = true;
   clearAllSugarHazards();
   UI.obstaclesContainer.innerHTML = '';
   UI.decorationsContainer.innerHTML = '';
-
-  // Kembalikan teks tajuk asal menu
   UI.title.textContent = "✨ FITQUEST ✨";
   
-  // Tampilkan semua setup box pilihan menu semula
   document.getElementById('menu-setup-level').style.display = 'block';
   document.getElementById('menu-setup-char').style.display = 'block';
   document.getElementById('menu-instructions').style.display = 'block';
   UI.safety.style.display = 'block';
 
-  // Susun semula struktur butang tunggal START GAME
   UI.actionsContainer.innerHTML = `<button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>`;
   
-  // Segarkan skor tinggi paparan
   displayCurrentLevelHighScore();
   UI.overlay.style.display = 'flex';
 }
@@ -226,7 +307,7 @@ function setupEnvironment() {
   UI.timerBadge.textContent = "⏱️ 00:00.00";
 
   generateProceduralFieldDecorations();
-  generateChocolateObstacles(); // Bina dinding halangan baru pada permulaan perlawanan
+  generateChocolateObstacles(); 
   clearAllSugarHazards();
   resetBossForLevel();
 
@@ -284,14 +365,12 @@ function spawnPowerUpRandomly() {
   const horizontalMargin = window.innerWidth * 0.25;
   const verticalMargin = window.innerHeight * 0.25;
   
-  // Pastikan Apple tidak bertindih di atas permukaan koordinat dinding coklat
   let validSpawn = false;
   let attempts = 0;
   while (!validSpawn && attempts < 20) {
     runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
     runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
     
-    // Semak koordinat perlanggaran dengan tatasusunan dinding coklat
     let hitWall = false;
     for (let wall of runtime.obstacles) {
       if (runtime.powerX + 40 > wall.x && runtime.powerX < wall.x + wall.width &&
@@ -415,17 +494,20 @@ function engineFrameTick(timestamp) {
       runtime.lastFrameUpdateTime = timestamp;
       runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
     }
+    // Main bunyi melangkah mengikut selang masa kecil semasa berlari
+    if (timestamp - runtime.lastStepSoundTime > 320) {
+      runtime.lastStepSoundTime = timestamp;
+      playSoundFX('step');
+    }
   }
 
-  // AMBIL KIRA KOORDINAT CADANGAN POSISI PERGERAKAN BAHARU HERO
   let proposedX = runtime.pX + (runtime.steerX * runtime.currentSpeed);
   let proposedY = runtime.pY + (runtime.steerY * runtime.currentSpeed);
 
-  // KEMASKINI LOGIK: Kemaskini paksi hanya jika proposed koordinat TIDAK melanggar dinding coklat pepejal
   if (!checkPlayerWallCollisions(proposedX, runtime.pY)) {
     runtime.pX = proposedX;
   } else {
-    runtime.currentSpeed *= 0.4; // Beri kesan impak hentakan kecil jika melanggar dinding coklat
+    runtime.currentSpeed *= 0.4; 
   }
 
   if (!checkPlayerWallCollisions(runtime.pX, proposedY)) {
@@ -455,6 +537,7 @@ function engineFrameTick(timestamp) {
       UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
       UI.status.textContent = `🍏 VITAMIN POWERUP! Shield broken, strike now!`;
       UI.status.style.color = 'var(--powerup)';
+      playSoundFX('powerup'); // Bunyi kutip item
     }
   }
 
@@ -482,6 +565,8 @@ function spitSugarGlob() {
     vX: Math.cos(angle) * velocityMultiplier,
     vY: Math.sin(angle) * velocityMultiplier
   });
+
+  playSoundFX('shoot'); // Bunyi serangan peluru musuh
 }
 
 function processSugarHazards() {
@@ -492,15 +577,10 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // Jika peluru terlanggar dinding coklat, ia lebur menjadi kolam sirap
-    let hitWall = false;
-    for (let wall of runtime.obstacles) {
-      if (g.x > wall.x && g.x < wall.x + wall.width && g.y > wall.y && g.y < wall.y + wall.height) {
-        hitWall = true;
-      }
-    }
+    // KEMASKINI BARU: Semakan perlanggaran peluru dengan dinding dibuang 
+    // supaya peluru Sugar Cube TEMBUS dinding coklat tebal!
 
-    if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20 || hitWall) {
+    if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
@@ -519,6 +599,7 @@ function processSugarHazards() {
       UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
       UI.status.textContent = `💥 Hit by sugar glob!`;
       UI.status.style.color = "var(--danger)";
+      playSoundFX('hit_hero'); // Bunyi Hero terkena impak
 
       if (runtime.pHP <= 0) triggerGameOverScreen();
     }
@@ -583,7 +664,6 @@ function triggerGameOverScreen() {
   retryDesc.textContent = "Your energy drained completely. Let's stand up and try again!";
   card.insertBefore(retryDesc, UI.actionsContainer);
 
-  // BUTANG RE-TRY DAN BACK TO MENU DALAM OVERLAY GAME OVER
   UI.actionsContainer.innerHTML = `
     <button class="cta-btn pulse-button" onclick="igniteEngine()">RETRY LEVEL 🔄</button>
     <button class="secondary-btn" onclick="returnToMainMenu()">BACK TO MAIN MENU 🏠</button>
@@ -616,6 +696,7 @@ function processCombatStrike() {
     if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
       UI.status.textContent = "🛡️ Immune! Collect an Apple first!";
       UI.status.style.color = "var(--danger)";
+      playSoundFX('hit_hero');
       return;
     }
     let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
@@ -626,6 +707,7 @@ function processCombatStrike() {
     updateSugarBossScale();
     UI.status.textContent = `💥 HIT! Sugar Cube: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
+    playSoundFX('hit_boss'); // Bunyi serangan berjaya mengenai musuh
 
     if (runtime.eHP <= 0) processLevelVictory();
   } else {
@@ -651,8 +733,9 @@ function processLevelVictory() {
   let isNewRecord = checkAndSaveHighScore(runtime.currentLevel, runtime.elapsedTime);
   let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
+  playSoundFX('victory'); // Memainkan runut melodi kemenangan
+
   const card = UI.overlay.querySelector('.menu-card');
-  // Sembunyikan setup box biasa sementara ketika skrin kemenangan
   document.getElementById('menu-setup-level').style.display = 'none';
   document.getElementById('menu-setup-char').style.display = 'none';
   document.getElementById('menu-instructions').style.display = 'none';
@@ -711,7 +794,6 @@ function processLevelVictory() {
   UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
   UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
 
-  // REKA BUTANG DINAMIK: MENYEDIAKAN PILIHAN KELUAR MENU KEPADA PEMAIN (BARU)
   UI.actionsContainer.innerHTML = `
     <button class="cta-btn pulse-button" onclick="igniteEngine()">${nextLevelTriggerText}</button>
     <button class="secondary-btn" onclick="returnToMainMenu()">BACK TO MAIN MENU 🏠</button>
