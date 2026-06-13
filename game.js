@@ -64,9 +64,6 @@ const UI = {
 
 displayCurrentLevelHighScore();
 
-// ==========================================
-// SISTEM AUDIO (EFFECTS & BACKGROUND MUSIC)
-// ==========================================
 function initAudioEngine() {
   if (!runtime.audioCtx) {
     runtime.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -75,13 +72,11 @@ function initAudioEngine() {
 
 function playBackgroundMusic() {
   if (runtime.bgMusic) return; 
-
   runtime.bgMusic = new Audio('assets/bg-music.mp3'); 
   runtime.bgMusic.loop = true; 
   runtime.bgMusic.volume = 0.4; 
-
   runtime.bgMusic.play().catch(error => {
-    console.log("Autoplay music disekat oleh pelayar sehingga ada interaksi skrin:", error);
+    console.log("Autoplay blocked:", error);
   });
 }
 
@@ -180,16 +175,16 @@ function generateChocolateObstacles() {
   let blueprint = [];
 
   if (runtime.currentLevel === 1) {
-    blueprint.push({ x: mapW * 0.25, y: mapH * 0.45, w: mapW * 0.5, h: 40 });
+    blueprint.push({ x: mapW * 0.25, y: mapH * 0.45, w: mapW * 0.5, h: 50 });
   } 
   else if (runtime.currentLevel === 2) {
-    blueprint.push({ x: mapW * 0.15, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
-    blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 45, h: mapH * 0.4 });
+    blueprint.push({ x: mapW * 0.15, y: mapH * 0.3, w: 50, h: Math.floor(mapH * 0.4 / 50) * 50 });
+    blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 50, h: Math.floor(mapH * 0.4 / 50) * 50 });
   } 
   else if (runtime.currentLevel === 3) {
-    blueprint.push({ x: mapW * 0.2, y: mapH * 0.23, w: mapW * 0.6, h: 35 });
-    blueprint.push({ x: mapW * 0.08, y: mapH * 0.55, w: mapW * 0.42, h: 35 });
-    blueprint.push({ x: mapW * 0.62, y: mapH * 0.55, w: mapW * 0.3, h: 35 });
+    blueprint.push({ x: mapW * 0.2, y: mapH * 0.23, w: mapW * 0.6, h: 50 });
+    blueprint.push({ x: mapW * 0.08, y: mapH * 0.55, w: mapW * 0.42, h: 50 });
+    blueprint.push({ x: mapW * 0.62, y: mapH * 0.55, w: mapW * 0.3, h: 50 });
   }
 
   blueprint.forEach(wall => {
@@ -250,7 +245,6 @@ function displayCurrentLevelHighScore() {
   }
 }
 
-// FUNGSI BARU: Padamkan rekod skor lama dari memori telefon/pelayar jika butang tong sampah ditekan
 function wipeCurrentLevelScore() {
   let konfirmasi = confirm(`Adakah anda pasti mahu memadamkan rekod Best Time untuk Level ${runtime.currentLevel}?`);
   if (konfirmasi) {
@@ -555,22 +549,33 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
+/* SISTEM TEMBAKAN RAWAK DENGAN REKABENTUK INACCURACY SEBANYAK 180PX DI SEKELILING PEMAIN */
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
-  glob.style.left = `${runtime.eX + 40}px`;
-  glob.style.top = `${runtime.eY + 40}px`;
+  
+  // Titik mula peluru dari kedudukan tengah Sugar Cube Boss
+  let startX = runtime.eX + 40;
+  let startY = runtime.eY + 40;
+  glob.style.left = `${startX}px`;
+  glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  let targetX = runtime.pX + 50;
-  let targetY = runtime.pY + 50;
-  let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
+  // MENGIRA SASARAN RAWAK (INACCURACY SPREADING):
+  // Peluru tidak disasarkan tepat ke (runtime.pX, runtime.pY) lagi.
+  // Ia dialihkan secara rawak dalam lingkungan jarak -180px hingga +180px dari kedudukan sebenar pemain.
+  let targetScatterRadius = 180; 
+  let randomizedTargetX = (runtime.pX + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+  let randomizedTargetY = (runtime.pY + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+
+  // Hitung sudut tembakan berdasarkan koordinat sasaran rawak yang baru
+  let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
   runtime.sugarGlobs.push({
     element: glob,
-    x: runtime.eX + 40,
-    y: runtime.eY + 40,
+    x: startX,
+    y: startY,
     vX: Math.cos(angle) * velocityMultiplier,
     vY: Math.sin(angle) * velocityMultiplier
   });
@@ -586,6 +591,7 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
+    // Jika peluru terkeluar dari skrin, ia akan terus bertukar menjadi lopak sirap berdekatan sempadan skrin tersebut
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
