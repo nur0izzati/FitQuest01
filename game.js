@@ -549,22 +549,26 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
-/* SISTEM TEMBAKAN RAWAK DI SEKELILING KAWASAN PEMAIN */
+/* SISTEM TEMBAKAN RAWAK DENGAN REKABENTUK INACCURACY SEBANYAK 180PX DI SEKELILING PEMAIN */
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
+  // Titik mula peluru dari kedudukan tengah Sugar Cube Boss
   let startX = runtime.eX + 40;
   let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // Kembali disasarkan ke arah kedudukan pemain dengan ralat rawak +/- 180 piksel
+  // MENGIRA SASARAN RAWAK (INACCURACY SPREADING):
+  // Peluru tidak disasarkan tepat ke (runtime.pX, runtime.pY) lagi.
+  // Ia dialihkan secara rawak dalam lingkungan jarak -180px hingga +180px dari kedudukan sebenar pemain.
   let targetScatterRadius = 180; 
   let randomizedTargetX = (runtime.pX + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
   let randomizedTargetY = (runtime.pY + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
 
+  // Hitung sudut tembakan berdasarkan koordinat sasaran rawak yang baru
   let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
@@ -587,6 +591,7 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
+    // Jika peluru terkeluar dari skrin, ia akan terus bertukar menjadi lopak sirap berdekatan sempadan skrin tersebut
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
