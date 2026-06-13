@@ -549,7 +549,7 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
-/* SISTEM TEMBAKAN FOKUS KAWASAN TENGAH (SYRUP TRAP ZONE) */
+/* SISTEM TEMBAKAN RAWAK DI SEKELILING KAWASAN PEMAIN */
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
@@ -560,12 +560,10 @@ function spitSugarGlob() {
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // Mengira sasaran rawak di kawasan zon tengah skrin
-  let centerX = window.innerWidth / 2;
-  let centerY = window.innerHeight / 2;
-  
-  let randomizedTargetX = centerX + (Math.random() * 300 - 150);
-  let randomizedTargetY = centerY + (Math.random() * 300 - 150);
+  // Kembali disasarkan ke arah kedudukan pemain dengan ralat rawak +/- 180 piksel
+  let targetScatterRadius = 180; 
+  let randomizedTargetX = (runtime.pX + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+  let randomizedTargetY = (runtime.pY + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
 
   let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
@@ -589,7 +587,6 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // Tukar peluru ke lopak air apabila terkeluar dari sempadan skrin
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
