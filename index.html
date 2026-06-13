@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>FitQuest</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -42,83 +42,42 @@
       
       <div class="how-to-play-box interactive-panel" id="menu-instructions">
         <h3>🏃‍♂️ HOW TO PLAY & MOVE</h3>
-        
-        <div id="target-boss-preview">
-          <div class="boss-avatar-frame"></div>
-          <div class="boss-instruction-text">
-            <b>🛡️ SHIELD ALERT:</b><br>
-            The Sugar Cube has an active shield! You <b>MUST collect the Golden Apple</b> first to break its immunity, or your attacks will fail!
-          </div>
-        </div>
-
         <ol>
-          <li><span class="step-highlight">AIM:</span> Press and drag the white <b>Virtual Joystick</b> on the bottom-left to point your hero in a direction.</li>
-          <li><span class="step-highlight">MOVE:</span> While holding your aim direction, physically <b>walk or jog on the spot</b> to make your character run forward.</li>
-          <li><span class="step-highlight">STICKY MUD:</span> Avoid the purple puddles in the center! Stepping in them makes you sticky and slows your speed.</li>
-          <li><span class="step-highlight">SMASH:</span> Follow the glowing cyan radar arrow to find the Apple, grab it, run to the Sugar Cube, and <b>shake your phone firmly</b> to damage it!</li>
+          <li><span class="step-highlight">AIM:</span> Drag the virtual joystick to aim.</li>
+          <li><span class="MOVE:</span> Walk/Jog in place to move your hero.</li>
         </ol>
       </div>
 
-      <div class="safety-warning-box" id="safety-box">
-        <b style="color: #ff4d6d; text-transform: uppercase; font-size: 0.85rem;">⚠️ Safety First:</b>
-        <p style="color: #e2e8f0; margin: 4px 0 0 0; font-size: 0.8rem; line-height: 1.4;">
-          Check your real-world surroundings! Ensure your floor is flat and free of objects that can trip you.
-        </p>
-      </div>
-
-      <div id="menu-actions-container" style="width: 100%;">
+      <div id="menu-actions-container">
         <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
       </div>
     </div>
   </div>
 
-  <div id="player">
-    <div id="nav-arrow">
-      <div class="arrow-stem"></div>
-      <div class="arrow-head"></div>
-    </div>
-  </div>
-  
+  <div id="player"><div id="nav-arrow"><div class="arrow-stem"></div><div class="arrow-head"></div></div></div>
   <div id="enemy"></div>
   <div id="powerup-item" class="float-item"></div>
-
-  <div id="joy-boundary">
-    <div id="joy-stick"></div>
-  </div>
+  <div id="joy-boundary"><div id="joy-stick"></div></div>
 
   <div id="ui-layer">
     <div class="top-bar">
-      <div class="hp-housing">
-        <div class="hp-label">💚 Hero Energy</div>
-        <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
-      </div>
-      
-      <div class="center-ui-badges">
-        <div id="level-badge">LEVEL 1</div>
-        <div id="timer-badge">⏱️ 00:00.00</div>
-      </div>
-
-      <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">😈 Sugar Energy</div>
-        <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
-      </div>
+      <div class="hp-housing"><div class="hp-label">💚 Hero</div><div class="hp-track"><div id="p-fill" class="hp-fill"></div></div></div>
+      <div class="center-ui-badges"><div id="timer-badge">⏱️ 00:00.00</div></div>
+      <div class="hp-housing" style="text-align: right;"><div class="hp-label">😈 Sugar</div><div class="hp-track"><div id="e-fill" class="hp-fill"></div></div></div>
     </div>
-
     <div class="control-deck">
-      <div id="status-msg">Ready for action...</div>
-      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
+      <div id="motion-display">Step Rate: 0.00</div>
     </div>
   </div>
 </div>
 
-<script src="game.js"></script>
+<script src="game.js" defer></script>
 
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('FitQuest PWA Setup: Service Worker active!', reg.scope))
-        .catch(err => console.error('FitQuest PWA Setup: Registration failed.', err));
+        .catch(err => console.error('SW Failed:', err));
     });
   }
 </script>
