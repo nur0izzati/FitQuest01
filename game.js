@@ -32,8 +32,9 @@ let runtime = {
   selectedSprite: 'assets/hero-sprite.png',
   startTime: 0,
   elapsedTime: 0,
-  audioCtx: null, // Menguruskan sistem audio web
-  lastStepSoundTime: 0
+  audioCtx: null, 
+  lastStepSoundTime: 0,
+  bgMusic: null // Menyimpan trek audio lagu latar belakang
 };
 
 const UI = {
@@ -64,7 +65,7 @@ const UI = {
 displayCurrentLevelHighScore();
 
 // ==========================================
-// SISTEM WEB AUDIO API (KAWAII RETRO SOUNDS)
+// SISTEM AUDIO (EFFECTS & BACKGROUND MUSIC)
 // ==========================================
 function initAudioEngine() {
   if (!runtime.audioCtx) {
@@ -72,10 +73,28 @@ function initAudioEngine() {
   }
 }
 
+function playBackgroundMusic() {
+  if (runtime.bgMusic) return; // Mengelakkan lagu dimainkan bertindih
+
+  runtime.bgMusic = new Audio('assets/bg-music.mp3'); 
+  runtime.bgMusic.loop = true; 
+  runtime.bgMusic.volume = 0.4; // 40% Volume
+
+  runtime.bgMusic.play().catch(error => {
+    console.log("Autoplay music disekat oleh pelayar sehingga ada interaksi skrin:", error);
+  });
+}
+
+function stopBackgroundMusic() {
+  if (runtime.bgMusic) {
+    runtime.bgMusic.pause();
+    runtime.bgMusic.currentTime = 0;
+    runtime.bgMusic = null;
+  }
+}
+
 function playSoundFX(type) {
   if (!runtime.audioCtx) return;
-  
-  // Sambung semula audio jika ia disekat oleh pelayar
   if (runtime.audioCtx.state === 'suspended') {
     runtime.audioCtx.resume();
   }
@@ -89,7 +108,6 @@ function playSoundFX(type) {
   const now = ctx.currentTime;
 
   if (type === 'step') {
-    // Bunyi tapak kaki berjalan comel (Pop ringan)
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(150, now);
     osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
@@ -99,7 +117,6 @@ function playSoundFX(type) {
     osc.stop(now + 0.08);
   } 
   else if (type === 'shoot') {
-    // Bunyi Sugar Cube tembak (Pew!)
     osc.type = 'sine';
     osc.frequency.setValueAtTime(600, now);
     osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
@@ -109,7 +126,6 @@ function playSoundFX(type) {
     osc.stop(now + 0.2);
   } 
   else if (type === 'hit_hero') {
-    // Bunyi Hero terlanggar/sakit (Hurt)
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(180, now);
     osc.frequency.linearRampToValueAtTime(60, now + 0.25);
@@ -119,7 +135,6 @@ function playSoundFX(type) {
     osc.stop(now + 0.25);
   } 
   else if (type === 'hit_boss') {
-    // Bunyi pemain pukul Sugar Cube
     osc.type = 'square';
     osc.frequency.setValueAtTime(300, now);
     osc.frequency.setValueAtTime(450, now + 0.05);
@@ -129,24 +144,22 @@ function playSoundFX(type) {
     osc.stop(now + 0.12);
   }
   else if (type === 'powerup') {
-    // Bunyi kutip Apple (Chime ceria)
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(523.25, now); // C5
-    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
-    osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+    osc.frequency.setValueAtTime(523.25, now); 
+    osc.frequency.setValueAtTime(659.25, now + 0.08); 
+    osc.frequency.setValueAtTime(783.99, now + 0.16); 
+    osc.frequency.setValueAtTime(1046.50, now + 0.24); 
     gain.gain.setValueAtTime(0.2, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
     osc.start(now);
     osc.stop(now + 0.4);
   }
   else if (type === 'victory') {
-    // Alunan muzik menang ringkas
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(587.33, now); // D5
-    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-    osc.frequency.setValueAtTime(880.00, now + 0.2); // A5
-    osc.frequency.setValueAtTime(987.77, now + 0.3); // B5
+    osc.frequency.setValueAtTime(587.33, now); 
+    osc.frequency.setValueAtTime(659.25, now + 0.1); 
+    osc.frequency.setValueAtTime(880.00, now + 0.2); 
+    osc.frequency.setValueAtTime(987.77, now + 0.3); 
     gain.gain.setValueAtTime(0.25, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
     osc.start(now);
@@ -266,7 +279,8 @@ function selectGender(gender) {
 }
 
 function igniteEngine() {
-  initAudioEngine(); // Mengaktifkan enjin audio sebaik butang ditekan
+  initAudioEngine(); 
+  playBackgroundMusic(); // MAIN LAGU LATAR BELAKANG GAMING
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
@@ -277,6 +291,7 @@ function igniteEngine() {
 
 function returnToMainMenu() {
   runtime.halted = true;
+  stopBackgroundMusic(); // Hentikan musik apabila keluar ke menu utama
   clearAllSugarHazards();
   UI.obstaclesContainer.innerHTML = '';
   UI.decorationsContainer.innerHTML = '';
@@ -494,7 +509,6 @@ function engineFrameTick(timestamp) {
       runtime.lastFrameUpdateTime = timestamp;
       runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
     }
-    // Main bunyi melangkah mengikut selang masa kecil semasa berlari
     if (timestamp - runtime.lastStepSoundTime > 320) {
       runtime.lastStepSoundTime = timestamp;
       playSoundFX('step');
@@ -537,7 +551,7 @@ function engineFrameTick(timestamp) {
       UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
       UI.status.textContent = `🍏 VITAMIN POWERUP! Shield broken, strike now!`;
       UI.status.style.color = 'var(--powerup)';
-      playSoundFX('powerup'); // Bunyi kutip item
+      playSoundFX('powerup'); 
     }
   }
 
@@ -566,7 +580,7 @@ function spitSugarGlob() {
     vY: Math.sin(angle) * velocityMultiplier
   });
 
-  playSoundFX('shoot'); // Bunyi serangan peluru musuh
+  playSoundFX('shoot'); 
 }
 
 function processSugarHazards() {
@@ -577,8 +591,7 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // KEMASKINI BARU: Semakan perlanggaran peluru dengan dinding dibuang 
-    // supaya peluru Sugar Cube TEMBUS dinding coklat tebal!
+    // KEMASKINI: Tiada semakan dinding di sini, peluru TEMBUS dinding coklat tebal!
 
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
@@ -599,7 +612,7 @@ function processSugarHazards() {
       UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
       UI.status.textContent = `💥 Hit by sugar glob!`;
       UI.status.style.color = "var(--danger)";
-      playSoundFX('hit_hero'); // Bunyi Hero terkena impak
+      playSoundFX('hit_hero'); 
 
       if (runtime.pHP <= 0) triggerGameOverScreen();
     }
@@ -646,6 +659,7 @@ function createSugarPuddle(rawX, rawY) {
 
 function triggerGameOverScreen() {
   runtime.halted = true;
+  stopBackgroundMusic(); // Musik berhenti apabila mati
   clearAllSugarHazards();
   UI.title.textContent = "💥 QUEST FAILED";
   UI.status.textContent = "Defeated...";
@@ -707,7 +721,7 @@ function processCombatStrike() {
     updateSugarBossScale();
     UI.status.textContent = `💥 HIT! Sugar Cube: ${runtime.eHP}%`;
     UI.status.style.color = "var(--primary)";
-    playSoundFX('hit_boss'); // Bunyi serangan berjaya mengenai musuh
+    playSoundFX('hit_boss'); 
 
     if (runtime.eHP <= 0) processLevelVictory();
   } else {
@@ -727,13 +741,14 @@ function checkAndSaveHighScore(level, completionTime) {
 
 function processLevelVictory() {
   runtime.halted = true;
+  stopBackgroundMusic(); // Musik dihentikan apabila level selesai
   clearAllSugarHazards();
   window.removeEventListener('devicemotion', evaluateDeviceSensors);
 
   let isNewRecord = checkAndSaveHighScore(runtime.currentLevel, runtime.elapsedTime);
   let finalTimeFormatted = formatTime(runtime.elapsedTime);
 
-  playSoundFX('victory'); // Memainkan runut melodi kemenangan
+  playSoundFX('victory'); 
 
   const card = UI.overlay.querySelector('.menu-card');
   document.getElementById('menu-setup-level').style.display = 'none';
