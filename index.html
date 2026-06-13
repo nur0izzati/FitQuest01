@@ -41,21 +41,22 @@
       </div>
       
       <div class="how-to-play-box interactive-panel" id="menu-instructions">
-        <h3>🏃‍♂️ Mission Rules</h3>
+        <h3>🏃‍♂️ HOW TO PLAY & MOVE</h3>
         
         <div id="target-boss-preview">
           <div class="boss-avatar-frame"></div>
           <div class="boss-instruction-text">
-            <b>TARGET ALERT:</b><br>
-            Find and crush the <span>Sugar Cube</span> to burn away dangerous sweet calories!
+            <b>🛡️ SHIELD ALERT:</b><br>
+            The Sugar Cube has an active shield! You <b>MUST collect the Golden Apple</b> first to break its immunity, or your attacks will fail!
           </div>
         </div>
 
-        <ul>
-          <li><b>Aim:</b> Hold and drag the virtual joystick on screen to aim your character.</li>
-          <li><b>Run:</b> While aiming, physically <b>walk or jog on the spot</b> to speed forward.</li>
-          <li><b>Strike:</b> Follow the <b>flexible radar arrow</b> to find the Sugar Cube, then <b>shake your phone</b> firmly to attack!</li>
-        </ul>
+        <ol>
+          <li><span class="step-highlight">AIM:</span> Press and drag the white <b>Virtual Joystick</b> on the bottom-left to point your hero in a direction.</li>
+          <li><span class="step-highlight">MOVE:</span> While holding your aim direction, physically <b>walk or jog on the spot</b> to make your character run forward.</li>
+          <li><span class="step-highlight">STICKY MUD:</span> Avoid the purple puddles in the center! Stepping in them makes you sticky and slows your speed.</li>
+          <li><span class="step-highlight">SMASH:</span> Follow the glowing cyan radar arrow to find the Apple, grab it, run to the Sugar Cube, and <b>shake your phone firmly</b> to damage it!</li>
+        </ol>
       </div>
 
       <div class="safety-warning-box" id="safety-box">
@@ -116,7 +117,7 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('FitQuest PWA Setup: Service Worker successfully active!', reg.scope))
+        .then(reg => console.log('FitQuest PWA Setup: Service Worker active!', reg.scope))
         .catch(err => console.error('FitQuest PWA Setup: Registration failed.', err));
     });
   }
