@@ -5,154 +5,89 @@ let gameActive = false;
 let gameTimer = 0;
 let timerInterval = null;
 
-// Player & Boss Entities State
-let playerX = 100;
-let playerY = 300;
-let playerSpeed = 5;
-let playerHp = 100;
-let isStickyMultiplier = 1.0;
+let playerX = 100, playerY = 300, playerSpeed = 5, playerHp = 100, isStickyMultiplier = 1.0;
+let enemyX = 600, enemyY = 300, enemyHp = 100, enemyShieldActive = true, bossCanAttack = false;
 
-let enemyX = 600;
-let enemyY = 300;
-let enemyHp = 100;
-let enemyShieldActive = true;
-let bossCanAttack = false;
-
-// Virtual Joystick State
-let joystickActive = false;
-let joyStartX = 0;
-let joyStartY = 0;
-let moveDirX = 0;
-let moveDirY = 0;
+let joystickActive = false, joyStartX = 0, joyStartY = 0, moveDirX = 0, moveDirY = 0;
 const maxJoystickDistance = 40;
 
-// Fitness/Movement Mechanics Tracking
-let stepRate = 0.0;
-let lastAcceleration = { x: 0, y: 0, z: 0 };
-let shakeThreshold = 15; 
-let bossProjectileInterval = null;
+let stepRate = 0.0, lastAcceleration = { x: 0, y: 0, z: 0 }, shakeThreshold = 15, bossProjectileInterval = null;
 
-// Cache DOM elements
+// Cache DOM
 const overlay = document.getElementById('overlay');
-const levelValueDisplay = document.getElementById('level-value');
+const levelValueDisplay = document.getElementById('menu-level-display');
 const highScoreDisplay = document.getElementById('high-score-display');
-const startBtn = document.getElementById('start-btn');
-const prevLevelBtn = document.getElementById('prev-lvl');
-const nextLevelBtn = document.getElementById('next-lvl');
-const resetScoreBtn = document.getElementById('reset-score');
-
+const startBtn = document.getElementById('action-btn'); // Matches HTML ID
 const playerEl = document.getElementById('player');
 const enemyEl = document.getElementById('enemy');
 const powerupEl = document.getElementById('powerup-item');
 const navArrowEl = document.getElementById('nav-arrow');
 const statusMsg = document.getElementById('status-msg');
-
 const pFill = document.getElementById('p-fill');
 const eFill = document.getElementById('e-fill');
 const timerBadge = document.getElementById('timer-badge');
-const levelBadge = document.getElementById('level-badge');
-
 const joyBoundary = document.getElementById('joy-boundary');
 const joyStick = document.getElementById('joy-stick');
 
-// --- 1. INITIALIZATION & MENU EVENT LISTENERS ---
+// --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
-  // Setup display defaults from storage
-  highScoreDisplay.textContent = highScore > 0 ? `Best Time: ${highScore.toFixed(2)}s` : "Best Time: 00:00";
-  
-  // Level Selector Arrow Buttons
-  prevLevelBtn.addEventListener('click', () => {
-    if (currentLevel > 1) {
-      currentLevel--;
-      updateMenuUI();
-    }
-  });
-
-  nextLevelBtn.addEventListener('click', () => {
-    if (currentLevel < 3) {
-      currentLevel++;
-      updateMenuUI();
-    }
-  });
-
-  // Reset Highscore Button
-  resetScoreBtn.addEventListener('click', () => {
-    localStorage.removeItem('fitquest_highscore');
-    highScore = 0;
-    highScoreDisplay.textContent = "Best Time: 00:00";
-  });
-
-  // Character Toggle Buttons (Cosmetic Customization Interaction)
-  const charBtns = document.querySelectorAll('.char-btn');
-  charBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      charBtns.forEach(b => b.classList.remove('active-pink'));
-      btn.classList.add('active-pink');
-      if(btn.id === 'char-male') {
-        playerEl.style.backgroundImage = "url('assets/hero-sprite2.png')";
-      } else {
-        playerEl.style.backgroundImage = "url('assets/hero-sprite.png')";
-      }
-    });
-  });
-
-  // Main CTA Start Game Trigger
-  startBtn.addEventListener('click', startGame);
-  
-  // Setup Mobile Web Sensor Mechanics (Accelerometer)
+  highScoreDisplay.textContent = highScore > 0 ? `🥇 Best Time: ${highScore.toFixed(2)}s` : "🥇 Best Time: --:--.--";
   initMotionSensors();
   setupJoystickInput();
 });
 
-function updateMenuUI() {
+// --- MENU FUNCTIONS (Connected to HTML) ---
+function changeMenuLevel(direction) {
+  currentLevel = Math.max(1, Math.min(3, currentLevel + direction));
   levelValueDisplay.textContent = `LEVEL ${currentLevel}`;
 }
 
-// --- 2. THE CHOSEN CORE ENGINE LAYOUT: LEVEL CONFIGURATIONS ---
+function selectGender(gender) {
+  document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active-pink'));
+  if (gender === 'female') {
+    document.getElementById('btn-female').classList.add('active-pink');
+    playerEl.style.backgroundImage = "url('assets/hero-sprite.png')";
+  } else {
+    document.getElementById('btn-male').classList.add('active-pink');
+    playerEl.style.backgroundImage = "url('assets/hero-sprite2.png')";
+  }
+}
+
+function wipeCurrentLevelScore() {
+  localStorage.removeItem('fitquest_highscore');
+  highScore = 0;
+  highScoreDisplay.textContent = "🥇 Best Time: --:--.--";
+}
+
+function igniteEngine() {
+  startGame();
+}
+
+// --- GAME LOGIC ---
+function startGame() {
+  overlay.style.display = 'none';
+  playerHp = 100; enemyHp = 100; gameTimer = 0; gameActive = true;
+  setupGameStageLayout(currentLevel);
+  const startTime = performance.now();
+  timerInterval = setInterval(() => {
+    gameTimer = (performance.now() - startTime) / 1000;
+    timerBadge.textContent = `⏱️ ${gameTimer.toFixed(2)}s`;
+  }, 10);
+  requestAnimationFrame(gameLoop);
+}
+
 function setupGameStageLayout(level) {
-  console.log(`Loading system configuration for FitQuest Level ${level}...`);
-  
-  // Reset clean scene vectors
-  const obstaclesLayer = document.getElementById('game-container');
-  
-  // Remove any previously spawned dynamic obstacles or puddles
+  const container = document.getElementById('game-container');
   document.querySelectorAll('.chocolate-wall, .sugar-puddle, .sugar-glob').forEach(el => el.remove());
   
-  // Default values reset
-  isStickyMultiplier = 1.0;
-  playerEl.classList.remove('sticky-slow');
   enemyShieldActive = true;
   enemyEl.classList.add('shielded');
-  powerupEl.style.display = 'block';
   
-  // Randomize Apple spawn coordinate placement 
-  spawnPowerupApple();
-
-  // Clear existing projectile timers
-  if (bossProjectileInterval) clearInterval(bossProjectileInterval);
-
-  // LEVEL PROGRESSION LOGIC TREE
-  switch (level) {
-    case 1:
-      // LEVEL 1 - Chocolate Bar Barriers Only
-      buildChocolateBarObstacles(obstaclesLayer);
-      bossCanAttack = false;
-      break;
-
-    case 2:
-      // LEVEL 2 - Syrup Puddles & Active Boss Attacks
-      buildSyrupMudPuddles(obstaclesLayer);
-      bossCanAttack = true;
-      activateBossProjectiles();
-      break;
-
-    case 3:
-      // LEVEL 3 - Combine Level 1 & 2 Together (Ultimate Challenge)
-      buildChocolateBarObstacles(obstaclesLayer);
-      buildSyrupMudPuddles(obstaclesLayer);
-      bossCanAttack = true;
-      activateBossProjectiles();
-      break;
+  if (level >= 1) buildChocolateBarObstacles(container);
+  if (level >= 2) {
+    buildSyrupMudPuddles(container);
+    bossCanAttack = true;
+    activateBossProjectiles();
   }
 }
 
