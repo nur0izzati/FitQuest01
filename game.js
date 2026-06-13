@@ -840,3 +840,37 @@ function mapSimulatedSteering() {
     else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
   }
 }
+
+// --- INSTALLATION LOGIC ---
+let deferredPrompt;
+const installBtn = document.getElementById('install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent browser's default prompt
+  e.preventDefault();
+  // Store the event so we can trigger it later
+  deferredPrompt = e;
+  // Show the button
+  if (installBtn) {
+    installBtn.style.display = 'block';
+  }
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', (e) => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        }
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    }
+  });
+}
+
+window.addEventListener('appinstalled', (evt) => {
+  if (installBtn) installBtn.style.display = 'none';
+});
