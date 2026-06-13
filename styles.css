@@ -4,7 +4,7 @@
   --powerup: #ffd166;
   --sugar-white: #ffffff;
   --kawaii-pink: #ff85a2;
-  --panel-bg: rgba(25, 35, 30, 0.96); /* Dark panel background color definition */
+  --panel-bg: rgba(25, 35, 30, 0.96); /* Dark solid panel color */
 }
 
 * {
@@ -35,7 +35,7 @@ body {
   touch-action: none;
 }
 
-/* HALANGAN COKLAT */
+/* HALANGAN COKLAT & ENVIRONMENT ELEMENTS */
 .chocolate-wall {
   position: absolute;
   background-image: url('assets/choco-bar.png');
@@ -45,7 +45,7 @@ body {
   border: 4px solid #5a3820;
   border-radius: 8px;
   box-shadow: inset 0 0 12px rgba(0,0,0,0.6), 0 6px 12px rgba(0,0,0,0.45);
-  z-index: 4;
+  z-index: 4; /* Keeps walls on the ground layer */
 }
 
 .chocolate-wall::before {
@@ -65,6 +65,103 @@ body {
   z-index: 2;
 }
 
+.sugar-puddle {
+  position: absolute;
+  width: 80px; 
+  height: 35px;
+  background: rgba(139, 92, 246, 0.5); 
+  border-radius: 50%;
+  box-shadow: 0 0 14px #8b5cf6;
+  z-index: 4; /* Keeps puddles flat on the ground */
+}
+
+/* CHARACTERS (HERO & BOSS) */
+#enemy {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background-image: url('assets/sugar-cube.png');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center center; 
+  image-rendering: pixelated;
+  z-index: 12; /* FIX: Lifts the boss high enough to clear chocolate walls/puddles */
+  transform-origin: center center;
+  animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
+  transition: filter 0.3s;
+}
+#enemy.shielded {
+  filter: drop-shadow(0 0 15px #ffffff) brightness(1.2);
+}
+
+#player {
+  position: absolute;
+  width: 100px;           
+  height: 100px;          
+  will-change: left, top;
+  background-image: url('assets/hero-sprite.png'); 
+  background-repeat: no-repeat;
+  background-size: 300% 400%;   
+  background-position: 50% 0%;  
+  image-rendering: pixelated;   
+  z-index: 13; /* FIX: Keeps player above environment and slightly in front of boss */
+  transition: filter 0.2s;
+}
+#player.sticky-slow {
+  filter: sepia(0.5) saturate(2) hue-rotate(-45deg) brightness(0.8);
+}
+
+/* PROJECTILES & ITEMS */
+.sugar-glob {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 15px var(--sugar-white);
+  z-index: 14;
+}
+
+#powerup-item {
+  position: absolute;
+  width: 50px; 
+  height: 50px; 
+  background-image: url('assets/apple.png');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 12px var(--powerup));
+  display: none;
+  z-index: 11;
+}
+
+#nav-arrow {
+  position: absolute;
+  top: 50px; 
+  left: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+  transform-origin: 0px 0px; 
+  z-index: 15;
+  filter: drop-shadow(0 0 8px #00e5ff);
+}
+.arrow-stem {
+  height: 6px;
+  width: 40px; 
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.1) 0%, rgba(0, 229, 255, 1) 100%);
+  border-radius: 3px;
+}
+.arrow-head {
+  width: 0; height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 14px solid #00e5ff;
+  margin-left: -2px;
+}
+
 /* MAIN MENU OVERLAY */
 #overlay {
   position: absolute;
@@ -72,7 +169,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 20, 18, 0.5); /* Semi-transparent dimming layer over the map */
+  background: rgba(15, 20, 18, 0.5); 
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -87,7 +184,7 @@ body {
 }
 
 .menu-card {
-  background: var(--panel-bg); /* FIXED: Gives the container its solid dark background */
+  background: var(--panel-bg); /* FIX: Fixes transparency, rendering full solid card background */
   border: 3px solid rgba(255, 255, 255, 0.15);
   border-radius: 24px;
   padding: 24px 20px;
@@ -97,7 +194,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #ffffff; /* Forces text readability inside the menu */
+  color: #ffffff;
 }
 
 #menu-title {
@@ -310,117 +407,7 @@ body {
   100% { box-shadow: 0 0 25px rgba(46, 229, 117, 0.65); }
 }
 
-/* ENTITI DI ATAS PADANG */
-#player {
-  position: absolute;
-  width: 100px;           
-  height: 100px;          
-  will-change: left, top;
-  background-image: url('assets/hero-sprite.png'); 
-  background-repeat: no-repeat;
-  background-size: 300% 400%;   
-  background-position: 50% 0%;  
-  image-rendering: pixelated;   
-  z-index: 6;
-  transition: filter 0.2s;
-}
-#player.sticky-slow {
-  filter: sepia(0.5) saturate(2) hue-rotate(-45deg) brightness(0.8);
-}
-
-#nav-arrow {
-  position: absolute;
-  top: 50px; 
-  left: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  pointer-events: none;
-  transform-origin: 0px 0px; 
-  z-index: 15;
-  filter: drop-shadow(0 0 8px #00e5ff);
-}
-.arrow-stem {
-  height: 6px;
-  width: 40px; 
-  background: linear-gradient(90deg, rgba(0, 229, 255, 0.1) 0%, rgba(0, 229, 255, 1) 100%);
-  border-radius: 3px;
-}
-.arrow-head {
-  width: 0; height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-left: 14px solid #00e5ff;
-  margin-left: -2px;
-}
-
-#enemy {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  background-image: url('assets/sugar-cube.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center center; 
-  image-rendering: pixelated;
-  z-index: 5;
-  transform-origin: center center;
-  animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
-  transition: filter 0.3s;
-}
-#enemy.shielded {
-  filter: drop-shadow(0 0 15px #ffffff) brightness(1.2);
-}
-
-.sugar-glob {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
-  border-radius: 4px;
-  box-shadow: 0 0 15px var(--sugar-white);
-  z-index: 7;
-}
-
-.sugar-puddle {
-  position: absolute;
-  width: 80px; 
-  height: 35px;
-  background: rgba(139, 92, 246, 0.5); 
-  border-radius: 50%;
-  box-shadow: 0 0 14px #8b5cf6;
-  z-index: 4;
-}
-
-#powerup-item {
-  position: absolute;
-  width: 50px; 
-  height: 50px; 
-  background-image: url('assets/apple.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 0 12px var(--powerup));
-  display: none;
-  z-index: 4;
-}
-
-.attack-pulse { animation: hitPulse 0.2s ease-out; }
-.hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
-.float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
-
-@keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
-@keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
-@keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
-
-@keyframes enemyIdleAnimation {
-  0% { transform: scaleX(1) scaleY(1) translateY(0); }
-  50% { transform: scaleX(1.05) scaleY(0.95) translateY(2px); }
-  100% { transform: scaleX(0.95) scaleY(1.05) translateY(-2px); }
-}
-
-/* UI SKRIN UTAMA (IN-GAME) */
+/* UI SKRIN UTAMA (IN-GAME HEADS-UP DISPLAY) */
 #ui-layer {
   position: absolute;
   top: 0; left: 0;
@@ -430,7 +417,7 @@ body {
   flex-direction: column;
   justify-content: space-between;
   padding: 20px;
-  z-index: 10;
+  z-index: 50; /* Sits over the playing field characters */
 }
 
 .top-bar { display: flex; justify-content: space-between; width: 100%; align-items: flex-start; }
@@ -488,7 +475,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 20;
+  z-index: 60; /* Higher than ui-layer background panels to keep responsive touch input */
   backdrop-filter: blur(3px);
 }
 #joy-stick {
@@ -497,4 +484,19 @@ body {
   border: 2px solid #fff;
   border-radius: 50%;
   pointer-events: none;
+}
+
+/* ANIMATIONS */
+.attack-pulse { animation: hitPulse 0.2s ease-out; }
+.hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
+.float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
+
+@keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
+@keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
+@keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+
+@keyframes enemyIdleAnimation {
+  0% { transform: scaleX(1) scaleY(1) translateY(0); }
+  50% { transform: scaleX(1.05) scaleY(0.95) translateY(2px); }
+  100% { transform: scaleX(0.95) scaleY(1.05) translateY(-2px); }
 }
