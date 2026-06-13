@@ -9,13 +9,10 @@
 <body>
 
 <div id="game-container">
-  <!-- LAPISAN LATAR BELAKANG PADANG (Kini dikosongkan daripada emoji bunga tiruan) -->
   <div id="field-decorations"></div>
-  
-  <!-- LAPISAN HALANGAN PEPEJAL (DINDING COKLAT) -->
   <div id="obstacles-layer"></div>
 
-  <!-- START MENU / INTERACTIVE OVERLAY (KAWAII UI) -->
+  <!-- START MENU / INTERACTIVE OVERLAY -->
   <div id="overlay">
     <div class="menu-card">
       <h1 id="menu-title">✨ FITQUEST ✨</h1>
@@ -29,7 +26,12 @@
           <span id="menu-level-display">LEVEL 1</span>
           <button class="arrow-btn" id="next-lvl-btn" onclick="changeMenuLevel(1)">➡️</button>
         </div>
-        <div id="high-score-display">🥇 Best Time: --:--.--</div>
+        
+        <!-- WRAPPER BARU DENGAN BUTANG TRASH UNTUK RESET HIGH SCORE -->
+        <div class="score-row-wrapper">
+          <div id="high-score-display">🥇 Best Time: --:--.--</div>
+          <button class="reset-score-btn" title="Reset level score" onclick="wipeCurrentLevelScore()">🗑️</button>
+        </div>
       </div>
 
       <!-- Character Toggle Box -->
@@ -67,7 +69,6 @@
         </p>
       </div>
 
-      <!-- CONTAINER UNTUK BUTANG DINAMIK -->
       <div id="menu-actions-container" style="width: 100%;">
         <button class="cta-btn pulse-button" id="action-btn" onclick="igniteEngine()">START QUEST 🎮</button>
       </div>
@@ -103,8 +104,9 @@
         <div id="timer-badge">⏱️ 00:00.00</div>
       </div>
 
+      <!-- KEMASKINI: Ditukar nama label bar kesihatan daripada Sugar Cube Health ke Sugar Energy -->
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">😈 Sugar Cube Health</div>
+        <div class="hp-label">😈 Sugar Energy</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
