@@ -16,16 +16,12 @@ const ASSETS_TO_CACHE = [
   './assets/bg-music.mp3'
 ];
 
-// Cache core game layers during installation
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Safe map loop prevents a single missing file from breaking the installation
       return Promise.all(
         ASSETS_TO_CACHE.map(url => {
-          return cache.add(url).catch(err => {
-            console.warn(`FitQuest Cache Warning: Asset skipped or missing -> ${url}`);
-          });
+          return cache.add(url).catch(err => console.warn(`Asset skipped: ${url}`));
         })
       );
     })
@@ -33,27 +29,23 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Clear old cache versions automatically
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
       );
     })
   );
   self.clients.claim();
 });
 
-// Fallback logic to instantly pull from cache offline
+// IMPROVED: Cache-First Strategy
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    caches.match(event.request).then((response) => {
+      // Return from cache if found, otherwise fetch from network
+      return response || fetch(event.request);
     })
   );
 });
