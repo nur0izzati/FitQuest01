@@ -583,29 +583,12 @@ function spitSugarGlob() {
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  let centerTargetX = window.innerWidth / 2;
+  // Focus tracking directly onto the player's current center coordinates
+  let targetX = runtime.pX + 50;
+  let targetY = runtime.pY + 50;
 
-  if (runtime.obstacles && runtime.obstacles.length >= 2) {
-    let wall1 = runtime.obstacles[0];
-    let wall2 = runtime.obstacles[1];
-    centerTargetX = (wall1.x + wall2.x) / 2 + 25;
-  }
-
-  let finalTargetX = 0;
-  let finalTargetY = 0;
-
-  // --- RANDOM ATTACK TARGETING (ROW PRESERVED VIA Y AXIS VARIANCE) ---
-  if (Math.random() < 0.4) {
-    // 40% Pure Chaos: Spits randomly anywhere across the screen area
-    finalTargetX = Math.random() * window.innerWidth;
-    finalTargetY = Math.random() * window.innerHeight;
-  } else {
-    // 60% Lane Crossing: Targets the center line column, but picks a completely random height
-    finalTargetX = centerTargetX;
-    finalTargetY = Math.random() * window.innerHeight;
-  }
-
-  let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
+  // Calculate angle of movement directly toward the player
+  let angle = Math.atan2(targetY - startY, targetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
   runtime.sugarGlobs.push({
@@ -635,20 +618,20 @@ function processSugarHazards() {
       centerTargetX = (wall1.x + wall2.x) / 2 + 25;
     }
 
-    // ROW AND COLUMN FOCUS CORRIDOR SETTINGS
+    // Define the central lane column boundaries
     let leftBound = centerTargetX - 60;
     let rightBound = centerTargetX + 20;
 
-    // JIKA PELURU MERENTASI KORIDOR TENGAH:
-    // It snaps X directly to the center lane, but retains its exact row height (g.y)!
+    // CENTER & ROW FOCUS: If the glob intercepts the center lane, 
+    // force drop the sticky puddle directly down the center column at its current height!
     if (g.x <= rightBound && g.x >= leftBound) {
-      createSugarPuddle(centerTargetX - 20, g.y); 
+      createSugarPuddle(centerTargetX - 20, g.y); // Locks X to center, focuses row height via g.y
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
-    // JIKA PELURU RAWAK TERLEPAS KE TEPI OUT OF BOUNDS
+    // Screen out-of-bounds cleanup fallback
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -656,7 +639,7 @@ function processSugarHazards() {
       continue;
     }
 
-    // COLLISION DENGAN HERO PLAYER
+    // Player bounding collision check
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
