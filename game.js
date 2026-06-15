@@ -611,7 +611,6 @@ function spitSugarGlob() {
   playSoundFX('shoot'); 
 }
 
-// FIXED: Portrait-optimized collision boundary trap zone
 function processSugarHazards() {
   for (let i = runtime.sugarGlobs.length - 1; i >= 0; i--) {
     let g = runtime.sugarGlobs[i];
@@ -620,6 +619,7 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
+    // 1. DYNAMIC CENTER POINT CALCULATIONS
     let centerTargetX = window.innerWidth / 2;
     let centerTargetY = window.innerHeight / 2;
 
@@ -630,18 +630,21 @@ function processSugarHazards() {
       centerTargetY = (wall1.y + (wall1.height || 200) / 2);
     }
 
-    // Capture area bounding box to keep items from sliding past the midpoint
-    let boxWidth = 40; 
-    let leftBound = centerTargetX - boxWidth;
-    let rightBound = centerTargetX + boxWidth;
-
-    if (g.x >= leftBound && g.x <= rightBound) {
-      createSugarPuddle(centerTargetX - 40, centerTargetY - 17); // Centers puddle cleanly
+    // 2. STRAIGHT HORIZONTAL CENTER ROW TRAP
+    // The boss is on the right shooting left/diagonal. 
+    // We check if the glob's X coordinate has arrived or crossed into the horizontal corridor space
+    // between the two chocolate bars (the center target X coordinate).
+    if (g.x <= centerTargetX + 20 && g.x >= centerTargetX - 60) {
+      // Force the puddle to spawn exactly at the center target height (Y) 
+      // This lines up all puddles in a perfect straight horizontal row array!
+      createSugarPuddle(g.x - 40, centerTargetY - 17); 
+      
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
+    // 3. BACKUP SCREEN EDGE CLEANUP
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -649,6 +652,7 @@ function processSugarHazards() {
       continue;
     }
 
+    // 4. HERO COLLISION DETECTION
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
@@ -667,6 +671,7 @@ function processSugarHazards() {
     }
   }
 
+  // STUCK IN SYRUP CHECK
   let currentlyOnPuddle = false;
   for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
     let p = runtime.sugarPuddles[j];
