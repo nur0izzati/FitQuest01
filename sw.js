@@ -1,4 +1,5 @@
-const CACHE_NAME = 'fitquest-cache-v4';
+// INCREMENTED: Version bumped to v5 to clear old code out of user devices automatically
+const CACHE_NAME = 'fitquest-cache-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -10,6 +11,8 @@ const ASSETS_TO_CACHE = [
   './assets/choco-bar.png',
   './assets/hero-sprite.png',
   './assets/hero-sprite2.png',
+  './assets/attack-sprite.png',  // ⬅️ Added: Pre-caches Female Attack animation
+  './assets/attack-sprite2.png', // ⬅️ Added: Pre-caches Male Attack animation
   './assets/sugar-cube.png',
   './assets/apple.png',
   './assets/slime.png',
