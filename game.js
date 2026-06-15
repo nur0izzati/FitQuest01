@@ -8,6 +8,7 @@ const SETTINGS = {
   velocityCap: 6.5,
   padRadius: 55,
   animationSpeed: 110,
+  attackAnimationSpeed: 80, // Speed per frame during strike
   sugarGlobVelocity: 4,
   sugarAttackFrequency: 2200,
   stickySlowFactor: 0.35
@@ -20,6 +21,7 @@ let runtime = {
   pHP: 100, eHP: 100,
   lastAttack: 0, halted: true, padActive: false,
   currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
+  isAttacking: false, attackFrame: 0, lastAttackFrameTime: 0, // State for tracking sheet swaps
   currentLevel: 1, 
   hasPowerUpBoost: false,
   powerX: 0, powerY: 0,
@@ -153,7 +155,7 @@ function playSoundFX(type) {
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(587.33, now); 
     osc.frequency.setValueAtTime(659.25, now + 0.1); 
-    osc.frequency.setValueAtTime(880.00, now + 0.2); 
+    osc.frequency.frequency.setValueAtTime(880.00, now + 0.2); 
     osc.frequency.setValueAtTime(987.77, now + 0.3); 
     gain.gain.setValueAtTime(0.25, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
@@ -246,7 +248,7 @@ function displayCurrentLevelHighScore() {
 }
 
 function wipeCurrentLevelScore() {
-  let konfirmasi = confirm(`Adakah anda pasti mahu memadamkan rekod Best Time untuk Level ${runtime.currentLevel}?`);
+  let konfirmasi = confirm(`Adakah anda pasti mahu pemadamkan rekod Best Time untuk Level ${runtime.currentLevel}?`);
   if (konfirmasi) {
     localStorage.removeItem(`fitquest_lvl_${runtime.currentLevel}`);
     displayCurrentLevelHighScore();
@@ -271,6 +273,8 @@ function igniteEngine() {
   initAudioEngine(); 
   playBackgroundMusic(); 
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
+  UI.player.classList.remove('attacking'); // Clean layout states on startup
+  runtime.isAttacking = false;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
   } else {
@@ -414,10 +418,13 @@ function buildJoystickControl() {
     runtime.steerX = xOffset / SETTINGS.padRadius;
     runtime.steerY = yOffset / SETTINGS.padRadius;
 
-    if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
-      runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
-    } else {
-      runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
+    // Keep direction changes from breaking frame layouts during a live swing
+    if (!runtime.isAttacking) {
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
+        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
+      } else {
+        runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
+      }
     }
   }
 
@@ -450,7 +457,7 @@ function evaluateDeviceSensors(event) {
     runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
     UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP' : 'Moving'}`;
   }
-  if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
+  if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike(performance.now());
 }
 
 function updateNavigationArrow(timestamp) {
@@ -490,17 +497,35 @@ function engineFrameTick(timestamp) {
 
   runtime.currentSpeed *= SETTINGS.frictionFactor;
 
-  if (runtime.currentSpeed < 0.1) {
-    runtime.currentSpeed = 0;
-    runtime.currentFrameIndex = 1; 
-  } else {
-    if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
-      runtime.lastFrameUpdateTime = timestamp;
-      runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
+  // ANIMATION CONTROL SPLIT: ATTACKING VS RUNNING
+  if (runtime.isAttacking) {
+    if (timestamp - runtime.lastAttackFrameTime > SETTINGS.attackAnimationSpeed) {
+      runtime.lastAttackFrameTime = timestamp;
+      runtime.attackFrame++;
+      
+      // If we surpass the sheet column frame threshold (assuming 3 columns, index 0 to 2)
+      if (runtime.attackFrame >= 3) {
+        runtime.isAttacking = false;
+        UI.player.classList.remove('attacking');
+        runtime.currentFrameIndex = 1; // Return to walking idle
+      } else {
+        runtime.currentFrameIndex = runtime.attackFrame;
+      }
     }
-    if (timestamp - runtime.lastStepSoundTime > 320) {
-      runtime.lastStepSoundTime = timestamp;
-      playSoundFX('step');
+  } else {
+    // Normal running animation logic
+    if (runtime.currentSpeed < 0.1) {
+      runtime.currentSpeed = 0;
+      runtime.currentFrameIndex = 1; 
+    } else {
+      if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
+        runtime.lastFrameUpdateTime = timestamp;
+        runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
+      }
+      if (timestamp - runtime.lastStepSoundTime > 320) {
+        runtime.lastStepSoundTime = timestamp;
+        playSoundFX('step');
+      }
     }
   }
 
@@ -549,26 +574,20 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
-/* SISTEM TEMBAKAN RAWAK DENGAN REKABENTUK INACCURACY SEBANYAK 180PX DI SEKELILING PEMAIN */
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
-  // Titik mula peluru dari kedudukan tengah Sugar Cube Boss
   let startX = runtime.eX + 40;
   let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // MENGIRA SASARAN RAWAK (INACCURACY SPREADING):
-  // Peluru tidak disasarkan tepat ke (runtime.pX, runtime.pY) lagi.
-  // Ia dialihkan secara rawak dalam lingkungan jarak -180px hingga +180px dari kedudukan sebenar pemain.
   let targetScatterRadius = 180; 
   let randomizedTargetX = (runtime.pX + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
   let randomizedTargetY = (runtime.pY + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
 
-  // Hitung sudut tembakan berdasarkan koordinat sasaran rawak yang baru
   let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
@@ -591,7 +610,6 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // Jika peluru terkeluar dari skrin, ia akan terus bertukar menjadi lopak sirap berdekatan sempadan skrin tersebut
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -696,11 +714,22 @@ function refreshViewportLayouts() {
   UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
 }
 
-function processCombatStrike() {
+function processCombatStrike(optTimestamp) {
   if (runtime.halted) return;
-  let timeStamp = Date.now();
-  if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
-  runtime.lastAttack = timeStamp;
+  
+  // Accept both explicit performance timestamp values and raw date checks
+  let currentTime = optTimestamp || performance.now();
+  let timeStampReal = Date.now();
+  
+  if (timeStampReal - runtime.lastAttack < SETTINGS.combatWindow) return;
+  runtime.lastAttack = timeStampReal;
+
+  // TRIGGER ATTACK ANIMATION STATE
+  runtime.isAttacking = true;
+  runtime.attackFrame = 0;
+  runtime.currentFrameIndex = 0;
+  runtime.lastAttackFrameTime = currentTime;
+  UI.player.classList.add('attacking');
 
   let eWidth = parseInt(UI.enemy.style.width) || 120;
   let distanceVector = Math.sqrt(((runtime.eX + (eWidth/2)) - (runtime.pX + 50))**2 + ((runtime.eY + (eWidth/2)) - (runtime.pY + 50))**2);
@@ -827,7 +856,7 @@ function simulateHardwareDown(e) {
     let simulatedGain = runtime.isStuckInSyrup ? 0.7 : 2.0;
     runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
   }
-  if (e.code === 'KeyE') processCombatStrike();
+  if (e.code === 'KeyE') processCombatStrike(performance.now());
   mapSimulatedSteering();
 }
 function simulateHardwareUp(e) { testKeys[e.code] = false; mapSimulatedSteering(); }
@@ -836,8 +865,10 @@ function mapSimulatedSteering() {
   runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
   runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
   if (runtime.steerX !== 0 || runtime.steerY !== 0) {
-    if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
-    else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
+    if (!runtime.isAttacking) {
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
+      else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
+    }
   }
 }
 
@@ -846,11 +877,8 @@ let deferredPrompt;
 const installBtn = document.getElementById('install-btn');
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent browser's default prompt
   e.preventDefault();
-  // Store the event so we can trigger it later
   deferredPrompt = e;
-  // Show the button
   if (installBtn) {
     installBtn.style.display = 'block';
   }
