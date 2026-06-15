@@ -577,33 +577,28 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
-// Replace spitSugarGlob
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
-  // Hitung kedudukan tengah-tengah piksel skrin
-  let centerPixelX = window.innerWidth / 2;
-  let centerPixelY = window.innerHeight / 2;
-
-  // Letak origin dekat dengan pusat map, tapi dengan sedikit variasi rawak untuk nampak natural
-  let originScatter = 20; 
-  let startX = centerPixelX + (Math.random() * (originScatter * 2) - originScatter);
-  let startY = centerPixelY + (Math.random() * (originScatter * 2) - originScatter);
-  
+  // FIXED: Peluru mula keluar dari kedudukan Sugar Cube Boss balik (bukan muncul tengah skrin)
+  let startX = runtime.eX + 40;
+  let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // MENGIRA SASARAN RAWAK (INACCURACY SPREADING):
-  // SASARAN SEKARANG ADALAH DEKAT PUSAT MAP, BUKAN PLAYER
-  // Kita guna scatter rawak di sekeliling pusat map untuk buat kawasan bahaya yang tengah
-  let targetScatterRadius = 180; // Sama seperti radius inaccuracy yang scribble tadi
-  let randomizedTargetX = centerPixelX + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
-  let randomizedTargetY = centerPixelY + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+  // SASARAN: Kedudukan tengah skrin (kawasan antara dua bar coklat)
+  let centerTargetX = window.innerWidth / 2;
+  let centerTargetY = window.innerHeight / 2;
 
-  // Hitung sudut tembakan berdasarkan koordinat sasaran rawak yang baru di pusat map
-  let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
+  // Sedikit scatter margin (60px) supaya kedudukan lopak sirap tidak bertindan 100% tepat pada satu titik
+  let centralScatter = 60;
+  let finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
+  let finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
+
+  // Hitung sudut tembakan dari Boss TEPAT ke arah pusat map
+  let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
   runtime.sugarGlobs.push({
