@@ -383,7 +383,7 @@ body {
   background-size: contain;
   background-position: bottom center;
   image-rendering: pixelated;
-  z-index: 5;
+  z-index: 11; /* ⬅️ CHANGED: Greater than #ui-layer (10) so it renders on top */
   transform-origin: bottom center;
   animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
   transition: filter 0.3s;
