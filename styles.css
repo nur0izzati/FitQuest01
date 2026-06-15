@@ -330,12 +330,19 @@ body {
   will-change: left, top;
   background-image: url('assets/hero-sprite.png'); 
   background-repeat: no-repeat;
-  background-size: 300% 400%;   
-  background-position: 50% 0%;  
+  background-size: 300px 400px; /* FIXED: Converted from percentages to match pixel tracking steps */  
+  background-position: -100px 0px;  
   image-rendering: pixelated;   
   z-index: 6;
   transition: filter 0.2s;
 }
+
+/* DYNAMIC GENDER ATTACK SHEET DIMENSIONS */
+#player.attacking {
+  background-image: var(--attack-sprite) !important;
+  background-size: 300px 400px !important; /* 3 Columns x 100px, 4 Rows x 100px */
+}
+
 /* Visual indicator when stuck in mud puddle */
 #player.sticky-slow {
   filter: sepia(0.5) saturate(2) hue-rotate(-45deg) brightness(0.8);
