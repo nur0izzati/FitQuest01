@@ -156,7 +156,7 @@ function playSoundFX(type) {
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(587.33, now); 
     osc.frequency.setValueAtTime(659.25, now + 0.1); 
-    osc.frequency.setValueAtTime(880.00, now + 0.2); // FIXED: Removed extra .frequency typo causing crashes
+    osc.frequency.setValueAtTime(880.00, now + 0.2); 
     osc.frequency.setValueAtTime(987.77, now + 0.3); 
     gain.gain.setValueAtTime(0.25, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
@@ -263,12 +263,12 @@ function selectGender(gender) {
     femaleBtn.className = 'char-btn active-pink';
     maleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite.png';
-    runtime.selectedAttackSprite = 'url("assets/attack-sprite.png")'; // Dynamic asset binding
+    runtime.selectedAttackSprite = 'url("assets/attack-sprite.png")'; 
   } else {
     maleBtn.className = 'char-btn active-pink';
     femaleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite2.png';
-    runtime.selectedAttackSprite = 'url("assets/attack-sprite2.png")'; // Dynamic asset binding
+    runtime.selectedAttackSprite = 'url("assets/attack-sprite2.png")'; 
   }
 }
 
@@ -276,7 +276,7 @@ function igniteEngine() {
   initAudioEngine(); 
   playBackgroundMusic(); 
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
-  UI.player.classList.remove('attacking'); // Clean layout states on startup
+  UI.player.classList.remove('attacking'); 
   runtime.isAttacking = false;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
@@ -421,7 +421,6 @@ function buildJoystickControl() {
     runtime.steerX = xOffset / SETTINGS.padRadius;
     runtime.steerY = yOffset / SETTINGS.padRadius;
 
-    // Keep direction changes from breaking frame layouts during a live swing
     if (!runtime.isAttacking) {
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
         runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
@@ -500,23 +499,20 @@ function engineFrameTick(timestamp) {
 
   runtime.currentSpeed *= SETTINGS.frictionFactor;
 
-  // ANIMATION CONTROL SPLIT: ATTACKING VS RUNNING
   if (runtime.isAttacking) {
     if (timestamp - runtime.lastAttackFrameTime > SETTINGS.attackAnimationSpeed) {
       runtime.lastAttackFrameTime = timestamp;
       runtime.attackFrame++;
       
-      // If we surpass the sheet column frame threshold (assuming 3 columns, index 0 to 2)
       if (runtime.attackFrame >= 3) {
         runtime.isAttacking = false;
         UI.player.classList.remove('attacking');
-        runtime.currentFrameIndex = 1; // Return to walking idle
+        runtime.currentFrameIndex = 1; 
       } else {
         runtime.currentFrameIndex = runtime.attackFrame;
       }
     }
   } else {
-    // Normal running animation logic
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
       runtime.currentFrameIndex = 1; 
@@ -581,23 +577,26 @@ function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
-  // FIXED: Peluru mula keluar dari kedudukan Sugar Cube Boss balik (bukan muncul tengah skrin)
   let startX = runtime.eX + 40;
   let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // SASARAN: Kedudukan tengah skrin (kawasan antara dua bar coklat)
   let centerTargetX = window.innerWidth / 2;
   let centerTargetY = window.innerHeight / 2;
 
-  // Sedikit scatter margin (60px) supaya kedudukan lopak sirap tidak bertindan 100% tepat pada satu titik
+  if (runtime.obstacles && runtime.obstacles.length >= 2) {
+    let wall1 = runtime.obstacles[0];
+    let wall2 = runtime.obstacles[1];
+    centerTargetX = (wall1.x + wall2.x) / 2 + 25;
+    centerTargetY = (wall1.y + (wall1.height || 200) / 2);
+  }
+
   let centralScatter = 60;
   let finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
   let finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
 
-  // Hitung sudut tembakan dari Boss TEPAT ke arah pusat map
   let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
@@ -612,6 +611,7 @@ function spitSugarGlob() {
   playSoundFX('shoot'); 
 }
 
+// FIXED: Portrait-optimized collision boundary trap zone
 function processSugarHazards() {
   for (let i = runtime.sugarGlobs.length - 1; i >= 0; i--) {
     let g = runtime.sugarGlobs[i];
@@ -620,7 +620,6 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // DYNAMIC PORTRAIT CENTER DETECTION
     let centerTargetX = window.innerWidth / 2;
     let centerTargetY = window.innerHeight / 2;
 
@@ -631,17 +630,18 @@ function processSugarHazards() {
       centerTargetY = (wall1.y + (wall1.height || 200) / 2);
     }
 
-    // PORTRAIT FIX: Daripada guna bulatan, kita guna 'Line Check'.
-    // Memandangkan boss tembak dari kanan ke kiri, peluru dikira sampai ke tengah 
-    // apabila koordinat X peluru melepasi atau sama dengan koordinat X pusat jurang.
-    if (g.x <= centerTargetX) {
-      createSugarPuddle(g.x, centerTargetY); // Paksa lopak sirap berhenti betul-betul di ketinggian tengah jurang
+    // Capture area bounding box to keep items from sliding past the midpoint
+    let boxWidth = 40; 
+    let leftBound = centerTargetX - boxWidth;
+    let rightBound = centerTargetX + boxWidth;
+
+    if (g.x >= leftBound && g.x <= rightBound) {
+      createSugarPuddle(centerTargetX - 40, centerTargetY - 17); // Centers puddle cleanly
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
-    // BACKUP SCREEN EDGE CLEANUP
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -649,7 +649,6 @@ function processSugarHazards() {
       continue;
     }
 
-    // HERO COLLISION DETECTION
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
@@ -668,7 +667,6 @@ function processSugarHazards() {
     }
   }
 
-  // STUCK IN SYRUP CHECK
   let currentlyOnPuddle = false;
   for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
     let p = runtime.sugarPuddles[j];
@@ -743,7 +741,7 @@ function refreshViewportLayouts() {
   UI.enemy.style.left = `${runtime.eX}px`;
   UI.enemy.style.top = `${runtime.eY}px`;
 
-  // FIXED: Converts frame calculations to exact pixel-matrix steps matching styles.css
+  // FIXED: Keeps animations clean using fixed pixel increments instead of percentage layouts
   let xOffset = runtime.currentFrameIndex * -100;  
   let yOffset = runtime.currentDirectionRow * -100; 
   UI.player.style.backgroundPosition = `${xOffset}px ${yOffset}px`;
@@ -764,7 +762,6 @@ function processCombatStrike(optTimestamp) {
   runtime.currentFrameIndex = 0;
   runtime.lastAttackFrameTime = currentTime;
   
-  // Update the CSS variable with the correct gender asset before shifting classes
   UI.player.style.setProperty('--attack-sprite', runtime.selectedAttackSprite);
   UI.player.classList.add('attacking');
 
