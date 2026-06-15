@@ -584,11 +584,17 @@ function spitSugarGlob() {
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  let targetScatterRadius = 180; 
-  let randomizedTargetX = (runtime.pX + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
-  let randomizedTargetY = (runtime.pY + 50) + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+  // TARGET FIELD CENTER: Force globs to always fly straight toward the middle of the screen
+  let centerTargetX = window.innerWidth / 2;
+  let centerTargetY = window.innerHeight / 2;
 
-  let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
+  // Optional: Add a tight scatter margin (e.g., 60px) so puddles don't stack perfectly on top of each other
+  let centralScatter = 60;
+  let finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
+  let finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
+
+  // Calculate bullet vector trajectories using the new central values
+  let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
   runtime.sugarGlobs.push({
