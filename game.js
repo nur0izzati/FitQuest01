@@ -577,40 +577,34 @@ function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
-  // Peluru keluar dari kedudukan Sugar Cube Boss
   let startX = runtime.eX + 40;
   let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // 1. Tentukan titik tengah untuk mode fokus
   let centerTargetX = window.innerWidth / 2;
-  let centerTargetY = window.innerHeight / 2;
 
   if (runtime.obstacles && runtime.obstacles.length >= 2) {
     let wall1 = runtime.obstacles[0];
     let wall2 = runtime.obstacles[1];
     centerTargetX = (wall1.x + wall2.x) / 2 + 25;
-    centerTargetY = (wall1.y + (wall1.height || 200) / 2);
   }
 
   let finalTargetX = 0;
   let finalTargetY = 0;
 
-  // 2. MOD TARGETING: 50% Tembakan Rawak Seluruh Skrin, 50% Tembakan Fokus Tengah Corong
-  if (Math.random() < 0.5) {
-    // Mode Chaos Rawak: Peluru disasarkan ke mana-mana sahaja di seluruh skrin
+  // --- RANDOM ATTACK TARGETING (ROW PRESERVED VIA Y AXIS VARIANCE) ---
+  if (Math.random() < 0.4) {
+    // 40% Pure Chaos: Spits randomly anywhere across the screen area
     finalTargetX = Math.random() * window.innerWidth;
     finalTargetY = Math.random() * window.innerHeight;
   } else {
-    // Mode Fokus Pusat: Peluru disasarkan padat di kawasan koridor tengah
-    let centralScatter = 50; 
-    finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
-    finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
+    // 60% Lane Crossing: Targets the center line column, but picks a completely random height
+    finalTargetX = centerTargetX;
+    finalTargetY = Math.random() * window.innerHeight;
   }
 
-  // 3. Hitung pergerakan peluru
   let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
@@ -634,28 +628,27 @@ function processSugarHazards() {
     g.element.style.top = `${g.y}px`;
 
     let centerTargetX = window.innerWidth / 2;
-    let centerTargetY = window.innerHeight / 2;
 
     if (runtime.obstacles && runtime.obstacles.length >= 2) {
       let wall1 = runtime.obstacles[0];
       let wall2 = runtime.obstacles[1];
       centerTargetX = (wall1.x + wall2.x) / 2 + 25;
-      centerTargetY = (wall1.y + (wall1.height || 200) / 2);
     }
 
-    // SEMPADAN CORONG TENGAH
+    // ROW AND COLUMN FOCUS CORRIDOR SETTINGS
     let leftBound = centerTargetX - 60;
     let rightBound = centerTargetX + 20;
 
-    // JIKA PELURU MERENTASI KORIDOR TENGAH: Paksa meletup jadi barisan lopak lurus
+    // JIKA PELURU MERENTASI KORIDOR TENGAH:
+    // It snaps X directly to the center lane, but retains its exact row height (g.y)!
     if (g.x <= rightBound && g.x >= leftBound) {
-      createSugarPuddle(g.x - 40, centerTargetY - 17); 
+      createSugarPuddle(centerTargetX - 20, g.y); 
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
-    // JIKA PELURU RAWAK TERLEPAS KE TEPI: Meletup di sempadan luar skrin (puddle rawak di tepi)
+    // JIKA PELURU RAWAK TERLEPAS KE TEPI OUT OF BOUNDS
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -757,7 +750,6 @@ function refreshViewportLayouts() {
   UI.enemy.style.left = `${runtime.eX}px`;
   UI.enemy.style.top = `${runtime.eY}px`;
 
-  // FIXED: Keeps animations clean using fixed pixel increments instead of percentage layouts
   let xOffset = runtime.currentFrameIndex * -100;  
   let yOffset = runtime.currentDirectionRow * -100; 
   UI.player.style.backgroundPosition = `${xOffset}px ${yOffset}px`;
@@ -772,7 +764,6 @@ function processCombatStrike(optTimestamp) {
   if (timeStampReal - runtime.lastAttack < SETTINGS.combatWindow) return;
   runtime.lastAttack = timeStampReal;
 
-  // TRIGGER GENDER-SPECIFIC ATTACK STATE
   runtime.isAttacking = true;
   runtime.attackFrame = 0;
   runtime.currentFrameIndex = 0;
