@@ -32,6 +32,7 @@ let runtime = {
   obstacles: [], 
   lastSugarFired: 0,
   selectedSprite: 'assets/hero-sprite.png',
+  selectedAttackSprite: 'url("assets/attack-sprite.png")', // Dynamic tracker line added
   startTime: 0,
   elapsedTime: 0,
   audioCtx: null, 
@@ -155,7 +156,7 @@ function playSoundFX(type) {
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(587.33, now); 
     osc.frequency.setValueAtTime(659.25, now + 0.1); 
-    osc.frequency.frequency.setValueAtTime(880.00, now + 0.2); 
+    osc.frequency.setValueAtTime(880.00, now + 0.2); // FIXED: Removed extra .frequency typo causing crashes
     osc.frequency.setValueAtTime(987.77, now + 0.3); 
     gain.gain.setValueAtTime(0.25, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
@@ -262,10 +263,12 @@ function selectGender(gender) {
     femaleBtn.className = 'char-btn active-pink';
     maleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite.png';
+    runtime.selectedAttackSprite = 'url("assets/attack-sprite.png")'; // Dynamic asset binding
   } else {
     maleBtn.className = 'char-btn active-pink';
     femaleBtn.className = 'char-btn';
     runtime.selectedSprite = 'assets/hero-sprite2.png';
+    runtime.selectedAttackSprite = 'url("assets/attack-sprite2.png")'; // Dynamic asset binding
   }
 }
 
@@ -273,7 +276,7 @@ function igniteEngine() {
   initAudioEngine(); 
   playBackgroundMusic(); 
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
-  UI.player.classList.remove('attacking'); // Clean layout states on startup
+  UI.player.classList.remove('attacking'); 
   runtime.isAttacking = false;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
@@ -309,6 +312,7 @@ function setupEnvironment() {
   
   runtime.pX = 20;
   runtime.pY = 20;
+  runtime.isAttacking = false;
   
   runtime.startTime = performance.now();
   runtime.elapsedTime = 0;
@@ -418,7 +422,6 @@ function buildJoystickControl() {
     runtime.steerX = xOffset / SETTINGS.padRadius;
     runtime.steerY = yOffset / SETTINGS.padRadius;
 
-    // Keep direction changes from breaking frame layouts during a live swing
     if (!runtime.isAttacking) {
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
         runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
@@ -497,23 +500,20 @@ function engineFrameTick(timestamp) {
 
   runtime.currentSpeed *= SETTINGS.frictionFactor;
 
-  // ANIMATION CONTROL SPLIT: ATTACKING VS RUNNING
   if (runtime.isAttacking) {
     if (timestamp - runtime.lastAttackFrameTime > SETTINGS.attackAnimationSpeed) {
       runtime.lastAttackFrameTime = timestamp;
       runtime.attackFrame++;
       
-      // If we surpass the sheet column frame threshold (assuming 3 columns, index 0 to 2)
       if (runtime.attackFrame >= 3) {
         runtime.isAttacking = false;
         UI.player.classList.remove('attacking');
-        runtime.currentFrameIndex = 1; // Return to walking idle
+        runtime.currentFrameIndex = 1; 
       } else {
         runtime.currentFrameIndex = runtime.attackFrame;
       }
     }
   } else {
-    // Normal running animation logic
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
       runtime.currentFrameIndex = 1; 
@@ -717,18 +717,20 @@ function refreshViewportLayouts() {
 function processCombatStrike(optTimestamp) {
   if (runtime.halted) return;
   
-  // Accept both explicit performance timestamp values and raw date checks
   let currentTime = optTimestamp || performance.now();
   let timeStampReal = Date.now();
   
   if (timeStampReal - runtime.lastAttack < SETTINGS.combatWindow) return;
   runtime.lastAttack = timeStampReal;
 
-  // TRIGGER ATTACK ANIMATION STATE
+  // TRIGGER GENDER-SPECIFIC ATTACK STATE
   runtime.isAttacking = true;
   runtime.attackFrame = 0;
   runtime.currentFrameIndex = 0;
   runtime.lastAttackFrameTime = currentTime;
+  
+  // Update the CSS variable with the correct gender asset before shifting classes
+  UI.player.style.setProperty('--attack-sprite', runtime.selectedAttackSprite);
   UI.player.classList.add('attacking');
 
   let eWidth = parseInt(UI.enemy.style.width) || 120;
