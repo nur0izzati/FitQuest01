@@ -620,6 +620,20 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
+    // 1. TARGET CENTER IMPACT DETECTOR
+    let centerTargetX = window.innerWidth / 2;
+    let centerTargetY = window.innerHeight / 2;
+    let distToCenter = Math.sqrt((g.x - centerTargetX) ** 2 + (g.y - centerTargetY) ** 2);
+
+    // If glob arrives inside the center zone between the chocolate bars, trigger puddle drop
+    if (distToCenter < 70) {
+      createSugarPuddle(g.x, g.y);
+      g.element.remove();
+      runtime.sugarGlobs.splice(i, 1);
+      continue;
+    }
+
+    // 2. SCREEN BOUNDARY CLEANUP TRAP
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -627,6 +641,7 @@ function processSugarHazards() {
       continue;
     }
 
+    // 3. HERO HITBOX DETECTION
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
@@ -645,6 +660,7 @@ function processSugarHazards() {
     }
   }
 
+  // STUCK IN SYRUP MUD STEP CHECK
   let currentlyOnPuddle = false;
   for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
     let p = runtime.sugarPuddles[j];
@@ -667,7 +683,6 @@ function processSugarHazards() {
     }
   }
 }
-
 function createSugarPuddle(rawX, rawY) {
   let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
   let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
@@ -719,9 +734,10 @@ function refreshViewportLayouts() {
   UI.enemy.style.left = `${runtime.eX}px`;
   UI.enemy.style.top = `${runtime.eY}px`;
 
-  let xPercentage = runtime.currentFrameIndex * 50;  
-  let yPercentage = runtime.currentDirectionRow * 33.333; 
-  UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
+  // FIXED: Converts frame calculations to exact pixel-matrix steps matching styles.css
+  let xOffset = runtime.currentFrameIndex * -100;  
+  let yOffset = runtime.currentDirectionRow * -100; 
+  UI.player.style.backgroundPosition = `${xOffset}px ${yOffset}px`;
 }
 
 function processCombatStrike(optTimestamp) {
