@@ -620,20 +620,28 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // 1. TARGET CENTER IMPACT DETECTOR
+    // DYNAMIC PORTRAIT CENTER DETECTION
     let centerTargetX = window.innerWidth / 2;
     let centerTargetY = window.innerHeight / 2;
-    let distToCenter = Math.sqrt((g.x - centerTargetX) ** 2 + (g.y - centerTargetY) ** 2);
 
-    // If glob arrives inside the center zone between the chocolate bars, trigger puddle drop
-    if (distToCenter < 70) {
-      createSugarPuddle(g.x, g.y);
+    if (runtime.obstacles && runtime.obstacles.length >= 2) {
+      let wall1 = runtime.obstacles[0];
+      let wall2 = runtime.obstacles[1];
+      centerTargetX = (wall1.x + wall2.x) / 2 + 25;
+      centerTargetY = (wall1.y + (wall1.height || 200) / 2);
+    }
+
+    // PORTRAIT FIX: Daripada guna bulatan, kita guna 'Line Check'.
+    // Memandangkan boss tembak dari kanan ke kiri, peluru dikira sampai ke tengah 
+    // apabila koordinat X peluru melepasi atau sama dengan koordinat X pusat jurang.
+    if (g.x <= centerTargetX) {
+      createSugarPuddle(g.x, centerTargetY); // Paksa lopak sirap berhenti betul-betul di ketinggian tengah jurang
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
-    // 2. SCREEN BOUNDARY CLEANUP TRAP
+    // BACKUP SCREEN EDGE CLEANUP
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -641,7 +649,7 @@ function processSugarHazards() {
       continue;
     }
 
-    // 3. HERO HITBOX DETECTION
+    // HERO COLLISION DETECTION
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
@@ -660,7 +668,7 @@ function processSugarHazards() {
     }
   }
 
-  // STUCK IN SYRUP MUD STEP CHECK
+  // STUCK IN SYRUP CHECK
   let currentlyOnPuddle = false;
   for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
     let p = runtime.sugarPuddles[j];
@@ -683,6 +691,7 @@ function processSugarHazards() {
     }
   }
 }
+
 function createSugarPuddle(rawX, rawY) {
   let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
   let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
