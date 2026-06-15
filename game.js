@@ -577,12 +577,14 @@ function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
+  // Peluru keluar dari kedudukan Sugar Cube Boss
   let startX = runtime.eX + 40;
   let startY = runtime.eY + 40;
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
+  // 1. Tentukan titik tengah untuk mode fokus
   let centerTargetX = window.innerWidth / 2;
   let centerTargetY = window.innerHeight / 2;
 
@@ -593,10 +595,22 @@ function spitSugarGlob() {
     centerTargetY = (wall1.y + (wall1.height || 200) / 2);
   }
 
-  let centralScatter = 60;
-  let finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
-  let finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
+  let finalTargetX = 0;
+  let finalTargetY = 0;
 
+  // 2. MOD TARGETING: 50% Tembakan Rawak Seluruh Skrin, 50% Tembakan Fokus Tengah Corong
+  if (Math.random() < 0.5) {
+    // Mode Chaos Rawak: Peluru disasarkan ke mana-mana sahaja di seluruh skrin
+    finalTargetX = Math.random() * window.innerWidth;
+    finalTargetY = Math.random() * window.innerHeight;
+  } else {
+    // Mode Fokus Pusat: Peluru disasarkan padat di kawasan koridor tengah
+    let centralScatter = 50; 
+    finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
+    finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
+  }
+
+  // 3. Hitung pergerakan peluru
   let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
@@ -619,7 +633,6 @@ function processSugarHazards() {
     g.element.style.left = `${g.x}px`;
     g.element.style.top = `${g.y}px`;
 
-    // 1. DYNAMIC CENTER POINT CALCULATIONS
     let centerTargetX = window.innerWidth / 2;
     let centerTargetY = window.innerHeight / 2;
 
@@ -630,21 +643,19 @@ function processSugarHazards() {
       centerTargetY = (wall1.y + (wall1.height || 200) / 2);
     }
 
-    // 2. STRAIGHT HORIZONTAL CENTER ROW TRAP
-    // The boss is on the right shooting left/diagonal. 
-    // We check if the glob's X coordinate has arrived or crossed into the horizontal corridor space
-    // between the two chocolate bars (the center target X coordinate).
-    if (g.x <= centerTargetX + 20 && g.x >= centerTargetX - 60) {
-      // Force the puddle to spawn exactly at the center target height (Y) 
-      // This lines up all puddles in a perfect straight horizontal row array!
+    // SEMPADAN CORONG TENGAH
+    let leftBound = centerTargetX - 60;
+    let rightBound = centerTargetX + 20;
+
+    // JIKA PELURU MERENTASI KORIDOR TENGAH: Paksa meletup jadi barisan lopak lurus
+    if (g.x <= rightBound && g.x >= leftBound) {
       createSugarPuddle(g.x - 40, centerTargetY - 17); 
-      
       g.element.remove();
       runtime.sugarGlobs.splice(i, 1);
       continue;
     }
 
-    // 3. BACKUP SCREEN EDGE CLEANUP
+    // JIKA PELURU RAWAK TERLEPAS KE TEPI: Meletup di sempadan luar skrin (puddle rawak di tepi)
     if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
       createSugarPuddle(g.x, g.y);
       g.element.remove();
@@ -652,7 +663,7 @@ function processSugarHazards() {
       continue;
     }
 
-    // 4. HERO COLLISION DETECTION
+    // COLLISION DENGAN HERO PLAYER
     let dx = g.x - (runtime.pX + 50);
     let dy = g.y - (runtime.pY + 50);
     let range = Math.sqrt(dx*dx + dy*dy);
@@ -671,7 +682,7 @@ function processSugarHazards() {
     }
   }
 
-  // STUCK IN SYRUP CHECK
+  // STATUS KESAN PIJAK LOPAK SIRAP
   let currentlyOnPuddle = false;
   for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
     let p = runtime.sugarPuddles[j];
