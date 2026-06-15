@@ -276,7 +276,7 @@ function igniteEngine() {
   initAudioEngine(); 
   playBackgroundMusic(); 
   UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
-  UI.player.classList.remove('attacking'); 
+  UI.player.classList.remove('attacking'); // Clean layout states on startup
   runtime.isAttacking = false;
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(setupEnvironment).catch(setupEnvironment);
@@ -312,7 +312,6 @@ function setupEnvironment() {
   
   runtime.pX = 20;
   runtime.pY = 20;
-  runtime.isAttacking = false;
   
   runtime.startTime = performance.now();
   runtime.elapsedTime = 0;
@@ -422,6 +421,7 @@ function buildJoystickControl() {
     runtime.steerX = xOffset / SETTINGS.padRadius;
     runtime.steerY = yOffset / SETTINGS.padRadius;
 
+    // Keep direction changes from breaking frame layouts during a live swing
     if (!runtime.isAttacking) {
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
         runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
@@ -500,20 +500,23 @@ function engineFrameTick(timestamp) {
 
   runtime.currentSpeed *= SETTINGS.frictionFactor;
 
+  // ANIMATION CONTROL SPLIT: ATTACKING VS RUNNING
   if (runtime.isAttacking) {
     if (timestamp - runtime.lastAttackFrameTime > SETTINGS.attackAnimationSpeed) {
       runtime.lastAttackFrameTime = timestamp;
       runtime.attackFrame++;
       
+      // If we surpass the sheet column frame threshold (assuming 3 columns, index 0 to 2)
       if (runtime.attackFrame >= 3) {
         runtime.isAttacking = false;
         UI.player.classList.remove('attacking');
-        runtime.currentFrameIndex = 1; 
+        runtime.currentFrameIndex = 1; // Return to walking idle
       } else {
         runtime.currentFrameIndex = runtime.attackFrame;
       }
     }
   } else {
+    // Normal running animation logic
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
       runtime.currentFrameIndex = 1; 
@@ -574,27 +577,33 @@ function engineFrameTick(timestamp) {
   requestAnimationFrame(engineFrameTick);
 }
 
+// Replace spitSugarGlob
 function spitSugarGlob() {
   let glob = document.createElement('div');
   glob.className = 'sugar-glob';
   
-  let startX = runtime.eX + 40;
-  let startY = runtime.eY + 40;
+  // Hitung kedudukan tengah-tengah piksel skrin
+  let centerPixelX = window.innerWidth / 2;
+  let centerPixelY = window.innerHeight / 2;
+
+  // Letak origin dekat dengan pusat map, tapi dengan sedikit variasi rawak untuk nampak natural
+  let originScatter = 20; 
+  let startX = centerPixelX + (Math.random() * (originScatter * 2) - originScatter);
+  let startY = centerPixelY + (Math.random() * (originScatter * 2) - originScatter);
+  
   glob.style.left = `${startX}px`;
   glob.style.top = `${startY}px`;
   UI.container.appendChild(glob);
 
-  // TARGET FIELD CENTER: Force globs to always fly straight toward the middle of the screen
-  let centerTargetX = window.innerWidth / 2;
-  let centerTargetY = window.innerHeight / 2;
+  // MENGIRA SASARAN RAWAK (INACCURACY SPREADING):
+  // SASARAN SEKARANG ADALAH DEKAT PUSAT MAP, BUKAN PLAYER
+  // Kita guna scatter rawak di sekeliling pusat map untuk buat kawasan bahaya yang tengah
+  let targetScatterRadius = 180; // Sama seperti radius inaccuracy yang scribble tadi
+  let randomizedTargetX = centerPixelX + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
+  let randomizedTargetY = centerPixelY + (Math.random() * (targetScatterRadius * 2) - targetScatterRadius);
 
-  // Optional: Add a tight scatter margin (e.g., 60px) so puddles don't stack perfectly on top of each other
-  let centralScatter = 60;
-  let finalTargetX = centerTargetX + (Math.random() * (centralScatter * 2) - centralScatter);
-  let finalTargetY = centerTargetY + (Math.random() * (centralScatter * 2) - centralScatter);
-
-  // Calculate bullet vector trajectories using the new central values
-  let angle = Math.atan2(finalTargetY - startY, finalTargetX - startX);
+  // Hitung sudut tembakan berdasarkan koordinat sasaran rawak yang baru di pusat map
+  let angle = Math.atan2(randomizedTargetY - startY, randomizedTargetX - startX);
   let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
   runtime.sugarGlobs.push({
