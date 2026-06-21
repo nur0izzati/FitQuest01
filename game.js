@@ -1,33 +1,49 @@
-// --- 1. CONFIGURATION & STATE ---
 const SETTINGS = {
-  moveCutoff: 11.8, shakeCutoff: 23.5, combatWindow: 500,
-  hitBoxRange: 75, frictionFactor: 0.88, accelerationGain: 0.7,
-  velocityCap: 6.5, padRadius: 55, animationSpeed: 110,
-  attackAnimationSpeed: 80, sugarGlobVelocity: 4,
-  sugarAttackFrequency: 2200, stickySlowFactor: 0.35
+  moveCutoff: 11.8,
+  shakeCutoff: 23.5,
+  combatWindow: 500,
+  hitBoxRange: 75,
+  frictionFactor: 0.88,
+  accelerationGain: 0.7,
+  velocityCap: 6.5,
+  padRadius: 55,
+  animationSpeed: 110,
+  attackAnimationSpeed: 80, // Speed per frame during strike
+  sugarGlobVelocity: 4,
+  sugarAttackFrequency: 2200,
+  stickySlowFactor: 0.35
 };
 
 let runtime = {
-  pX: 0, pY: 0, eX: 0, eY: 0, steerX: 0, steerY: 0, currentSpeed: 0,
-  pHP: 100, eHP: 100, lastAttack: 0, halted: true, padActive: false,
+  pX: 0, pY: 0, eX: 0, eY: 0,
+  steerX: 0, steerY: 0,
+  currentSpeed: 0,
+  pHP: 100, eHP: 100,
+  lastAttack: 0, halted: true, padActive: false,
   currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
-  isAttacking: false, attackFrame: 0, lastAttackFrameTime: 0,
-  currentLevel: 1, hasPowerUpBoost: false, powerX: 0, powerY: 0,
-  powerSpawned: false, isStuckInSyrup: false, sugarGlobs: [],
-  sugarPuddles: [], obstacles: [], lastSugarFired: 0,
+  isAttacking: false, attackFrame: 0, lastAttackFrameTime: 0, // State for tracking sheet swaps
+  currentLevel: 1, 
+  hasPowerUpBoost: false,
+  powerX: 0, powerY: 0,
+  powerSpawned: false,
+  isStuckInSyrup: false,
+  sugarGlobs: [],
+  sugarPuddles: [],
+  obstacles: [], 
+  lastSugarFired: 0,
   selectedSprite: 'assets/hero-sprite.png',
-  selectedAttackSprite: 'url("assets/attack-sprite.png")',
-  startTime: 0, elapsedTime: 0, audioCtx: null, lastStepSoundTime: 0, bgMusic: null
+  selectedAttackSprite: 'url("assets/attack-sprite.png")', // Dynamic tracker line added
+  startTime: 0,
+  elapsedTime: 0,
+  audioCtx: null, 
+  lastStepSoundTime: 0,
+  bgMusic: null 
 };
 
-// Global state for proximity alert
-let isAlertVisible = false;
-
-// UI elements (Ensure these match your HTML IDs)
 const UI = {
   container: document.getElementById('game-container'),
   decorationsContainer: document.getElementById('field-decorations'),
-  obstaclesContainer: document.getElementById('obstacles-layer'),
+  obstaclesContainer: document.getElementById('obstacles-layer'), 
   overlay: document.getElementById('overlay'),
   title: document.getElementById('menu-title'),
   safety: document.getElementById('safety-box'),
@@ -49,86 +65,173 @@ const UI = {
   navArrow: document.getElementById('nav-arrow')
 };
 
-// --- 2. PROXIMITY ALERT LOGIC ---
-function checkBossProximity() {
-  const alertBox = document.getElementById('action-alert');
-  if (!alertBox) return;
+displayCurrentLevelHighScore();
 
-  // Calculate centers based on runtime state
-  const pCenterX = runtime.pX + 50;
-  const pCenterY = runtime.pY + 50;
-  const eWidth = parseInt(UI.enemy.style.width) || 120;
-  const eCenterX = runtime.eX + (eWidth / 2);
-  const eCenterY = runtime.eY + (eWidth / 2);
-
-  const distance = Math.hypot(eCenterX - pCenterX, eCenterY - pCenterY);
-  const ATTACK_THRESHOLD = 150; 
-
-  if (distance < ATTACK_THRESHOLD) {
-    if (!isAlertVisible) {
-      alertBox.classList.remove('hidden');
-      alertBox.style.display = 'block';
-      isAlertVisible = true;
-    }
-  } else {
-    if (isAlertVisible) {
-      alertBox.classList.add('hidden');
-      alertBox.style.display = 'none';
-      isAlertVisible = false;
-    }
+function initAudioEngine() {
+  if (!runtime.audioCtx) {
+    runtime.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 }
 
-// --- 3. MAIN ENGINE TICK ---
-function engineFrameTick(timestamp) {
-  if (runtime.halted) return;
-
-  runtime.elapsedTime = timestamp - runtime.startTime;
-  UI.timerBadge.textContent = `⏱️ ${formatTime(runtime.elapsedTime)}`;
-  runtime.currentSpeed *= SETTINGS.frictionFactor;
-
-  // Handle Player Attack Animation
-  if (runtime.isAttacking) {
-    if (timestamp - runtime.lastAttackFrameTime > SETTINGS.attackAnimationSpeed) {
-      runtime.lastAttackFrameTime = timestamp;
-      runtime.attackFrame++;
-      if (runtime.attackFrame >= 3) {
-        runtime.isAttacking = false;
-        UI.player.classList.remove('attacking');
-        runtime.currentFrameIndex = 1;
-      } else {
-        runtime.currentFrameIndex = runtime.attackFrame;
-      }
-    }
-  } else {
-    // Movement logic
-    if (runtime.currentSpeed < 0.1) {
-      runtime.currentSpeed = 0;
-      runtime.currentFrameIndex = 1;
-    } else {
-      if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
-        runtime.lastFrameUpdateTime = timestamp;
-        runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
-      }
-    }
-  }
-
-  // Physics, Collisions, and Hazard Processing
-  let proposedX = runtime.pX + (runtime.steerX * runtime.currentSpeed);
-  let proposedY = runtime.pY + (runtime.steerY * runtime.currentSpeed);
-  if (!checkPlayerWallCollisions(proposedX, runtime.pY)) runtime.pX = proposedX;
-  if (!checkPlayerWallCollisions(runtime.pX, proposedY)) runtime.pY = proposedY;
-
-  // Check boss proximity for attack alert
-  checkBossProximity();
-
-  processSugarHazards();
-  updateNavigationArrow(timestamp);
-  refreshViewportLayouts();
-  requestAnimationFrame(engineFrameTick);
+function playBackgroundMusic() {
+  if (runtime.bgMusic) return; 
+  runtime.bgMusic = new Audio('assets/bg-music.mp3'); 
+  runtime.bgMusic.loop = true; 
+  runtime.bgMusic.volume = 0.4; 
+  runtime.bgMusic.play().catch(error => {
+    console.log("Autoplay blocked:", error);
+  });
 }
 
-// --- 4. FORMATTING & HELPERS ---
+function stopBackgroundMusic() {
+  if (runtime.bgMusic) {
+    runtime.bgMusic.pause();
+    runtime.bgMusic.currentTime = 0;
+    runtime.bgMusic = null;
+  }
+}
+
+function playSoundFX(type) {
+  if (!runtime.audioCtx) return;
+  if (runtime.audioCtx.state === 'suspended') {
+    runtime.audioCtx.resume();
+  }
+
+  const ctx = runtime.audioCtx;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+
+  if (type === 'step') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } 
+  else if (type === 'shoot') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } 
+  else if (type === 'hit_hero') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } 
+  else if (type === 'hit_boss') {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.setValueAtTime(450, now + 0.05);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+  else if (type === 'powerup') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, now); 
+    osc.frequency.setValueAtTime(659.25, now + 0.08); 
+    osc.frequency.setValueAtTime(783.99, now + 0.16); 
+    osc.frequency.setValueAtTime(1046.50, now + 0.24); 
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+  else if (type === 'victory') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(587.33, now); 
+    osc.frequency.setValueAtTime(659.25, now + 0.1); 
+    osc.frequency.setValueAtTime(880.00, now + 0.2); 
+    osc.frequency.setValueAtTime(987.77, now + 0.3); 
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+}
+
+function generateProceduralFieldDecorations() {
+  UI.decorationsContainer.innerHTML = ''; 
+}
+
+function generateChocolateObstacles() {
+  UI.obstaclesContainer.innerHTML = '';
+  runtime.obstacles = [];
+
+  let mapW = window.innerWidth;
+  let mapH = window.innerHeight;
+  let blueprint = [];
+
+  if (runtime.currentLevel === 1) {
+    blueprint.push({ x: mapW * 0.25, y: mapH * 0.45, w: mapW * 0.5, h: 50 });
+  } 
+  else if (runtime.currentLevel === 2) {
+    blueprint.push({ x: mapW * 0.15, y: mapH * 0.3, w: 50, h: Math.floor(mapH * 0.4 / 50) * 50 });
+    blueprint.push({ x: mapW * 0.65, y: mapH * 0.3, w: 50, h: Math.floor(mapH * 0.4 / 50) * 50 });
+  } 
+  else if (runtime.currentLevel === 3) {
+    blueprint.push({ x: mapW * 0.2, y: mapH * 0.23, w: mapW * 0.6, h: 50 });
+    blueprint.push({ x: mapW * 0.08, y: mapH * 0.55, w: mapW * 0.42, h: 50 });
+    blueprint.push({ x: mapW * 0.62, y: mapH * 0.55, w: mapW * 0.3, h: 50 });
+  }
+
+  blueprint.forEach(wall => {
+    let element = document.createElement('div');
+    element.className = 'chocolate-wall';
+    element.style.left = `${wall.x}px`;
+    element.style.top = `${wall.y}px`;
+    element.style.width = `${wall.w}px`;
+    element.style.height = `${wall.h}px`;
+    UI.obstaclesContainer.appendChild(element);
+    
+    runtime.obstacles.push({
+      x: wall.x, y: wall.y,
+      width: wall.w, height: wall.h
+    });
+  });
+}
+
+function checkPlayerWallCollisions(nextX, nextY) {
+  let hitboxSize = 24; 
+  let pLeft = nextX + 38; 
+  let pRight = pLeft + hitboxSize;
+  let pTop = nextY + 45; 
+  let pBottom = pTop + hitboxSize;
+
+  for (let wall of runtime.obstacles) {
+    if (pRight > wall.x && pLeft < wall.x + wall.width &&
+        pBottom > wall.y && pTop < wall.y + wall.height) {
+      return true; 
+    }
+  }
+  return false;
+}
+
+function changeMenuLevel(direction) {
+  let targetLevel = runtime.currentLevel + direction;
+  if (targetLevel >= 1 && targetLevel <= 3) {
+    runtime.currentLevel = targetLevel;
+    UI.menuLevelDisplay.textContent = `LEVEL ${runtime.currentLevel}`;
+    UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+    displayCurrentLevelHighScore();
+  }
+}
+
 function formatTime(ms) {
   let minutes = Math.floor(ms / 60000);
   let seconds = Math.floor((ms % 60000) / 1000);
