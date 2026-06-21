@@ -519,3 +519,23 @@ body {
   border-radius: 50%;
   pointer-events: none;
 }
+
+#action-alert {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 77, 109, 0.9);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 15px;
+  text-align: center;
+  z-index: 1000;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+#action-alert.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
