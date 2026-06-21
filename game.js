@@ -8,7 +8,7 @@ const SETTINGS = {
   velocityCap: 6.5,
   padRadius: 55,
   animationSpeed: 110,
-  attackAnimationSpeed: 80, // Speed per frame during strike
+  attackAnimationSpeed: 80,
   sugarGlobVelocity: 4,
   sugarAttackFrequency: 2200,
   stickySlowFactor: 0.35
